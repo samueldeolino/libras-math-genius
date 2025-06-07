@@ -68,10 +68,15 @@ const LoginForm = ({ onLogin }: LoginFormProps) => {
 
         onLogin(email, userData.nome);
       } else {
-        // Cadastro
+        // Cadastro com redirecionamento correto
+        const redirectUrl = `${window.location.origin}/`;
+        
         const { data, error } = await supabase.auth.signUp({
           email,
           password,
+          options: {
+            emailRedirectTo: redirectUrl
+          }
         });
 
         if (error) {

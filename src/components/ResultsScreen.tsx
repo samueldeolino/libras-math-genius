@@ -1,11 +1,11 @@
-
 import { useEffect } from "react";
 import { Button } from "@/components/ui/button";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { Badge } from "@/components/ui/badge";
-import { Trophy, RotateCcw, CheckCircle, XCircle, User, Target } from "lucide-react";
+import { Trophy, RotateCcw, CheckCircle, XCircle, Target } from "lucide-react";
 import { Question } from "../pages/Index";
 import { supabase } from "@/integrations/supabase/client";
+import UserHeader from "./UserHeader";
 
 interface ResultsScreenProps {
   results: {
@@ -16,11 +16,12 @@ interface ResultsScreenProps {
   userEmail: string;
   userName: string;
   onRestart: () => void;
+  onLogout: () => void;
   questions: Question[];
   userAnswers: number[];
 }
 
-const ResultsScreen = ({ results, userEmail, userName, onRestart, questions, userAnswers }: ResultsScreenProps) => {
+const ResultsScreen = ({ results, userEmail, userName, onRestart, onLogout, questions, userAnswers }: ResultsScreenProps) => {
   const percentage = Math.round((results.correct / results.total) * 100);
   
   useEffect(() => {
@@ -84,19 +85,10 @@ const ResultsScreen = ({ results, userEmail, userName, onRestart, questions, use
 
   return (
     <div className="min-h-screen bg-gradient-to-br from-blue-50 via-purple-50 to-pink-50 p-4">
-      {/* Header */}
-      <div className="max-w-4xl mx-auto mb-6">
-        <div className="flex items-center justify-between bg-white/80 backdrop-blur-sm rounded-lg p-4 shadow-lg">
-          <div className="flex items-center gap-3">
-            <User className="h-5 w-5 text-blue-600" />
-            <span className="text-sm font-medium text-gray-700">{userName}</span>
-          </div>
-          <div className="flex items-center gap-3">
-            <Trophy className="h-5 w-5 text-yellow-600" />
-            <span className="text-sm font-medium text-gray-700">Resultados</span>
-          </div>
-        </div>
-      </div>
+      <UserHeader 
+        userName={userName}
+        onLogout={onLogout}
+      />
 
       <div className="max-w-4xl mx-auto space-y-6">
         {/* Resultado Principal */}

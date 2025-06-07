@@ -161,6 +161,15 @@ const Index = () => {
     setIsLoggedIn(true);
   };
 
+  const handleLogout = () => {
+    setIsLoggedIn(false);
+    setCurrentUser("");
+    setUserName("");
+    setCurrentQuestionIndex(0);
+    setUserAnswers([]);
+    setShowResults(false);
+  };
+
   const handleAnswer = (selectedAnswer: number) => {
     const newAnswers = [...userAnswers, selectedAnswer];
     setUserAnswers(newAnswers);
@@ -192,6 +201,17 @@ const Index = () => {
     setShowResults(false);
   };
 
+  // Calcular acertos até agora
+  const getCurrentCorrectAnswers = () => {
+    let correct = 0;
+    for (let i = 0; i < currentQuestionIndex; i++) {
+      if (userAnswers[i] === questions[i].result) {
+        correct++;
+      }
+    }
+    return correct;
+  };
+
   if (!isLoggedIn) {
     return <LoginForm onLogin={handleLogin} />;
   }
@@ -204,6 +224,7 @@ const Index = () => {
         userEmail={currentUser}
         userName={userName}
         onRestart={resetGame}
+        onLogout={handleLogout}
         questions={questions}
         userAnswers={userAnswers}
       />
@@ -218,6 +239,8 @@ const Index = () => {
       onAnswer={handleAnswer}
       userEmail={currentUser}
       userName={userName}
+      correctAnswers={getCurrentCorrectAnswers()}
+      onLogout={handleLogout}
     />
   );
 };

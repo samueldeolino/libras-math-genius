@@ -3,8 +3,8 @@ import { useState } from "react";
 import { Button } from "@/components/ui/button";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { Progress } from "@/components/ui/progress";
-import { User, Calculator } from "lucide-react";
 import { Question } from "../pages/Index";
+import UserHeader from "./UserHeader";
 
 interface QuestionScreenProps {
   question: Question;
@@ -13,6 +13,8 @@ interface QuestionScreenProps {
   onAnswer: (answer: number) => void;
   userEmail: string;
   userName: string;
+  correctAnswers: number;
+  onLogout: () => void;
 }
 
 const QuestionScreen = ({
@@ -21,7 +23,9 @@ const QuestionScreen = ({
   totalQuestions,
   onAnswer,
   userEmail,
-  userName
+  userName,
+  correctAnswers,
+  onLogout
 }: QuestionScreenProps) => {
   const [selectedAnswer, setSelectedAnswer] = useState<number | null>(null);
   const [showFeedback, setShowFeedback] = useState(false);
@@ -69,23 +73,28 @@ const QuestionScreen = ({
 
   const progress = (questionNumber / totalQuestions) * 100;
 
+  // Calcular probabilidade de mostrar LIBRAS baseado nos acertos
+  const getLibrasProbability = () => {
+    const baseProb = 0.3; // 30% inicial
+    const maxProb = 0.8; // 80% máximo
+    const progressFactor = correctAnswers / (questionNumber - 1 || 1);
+    return Math.min(maxProb, baseProb + (progressFactor * 0.5));
+  };
+
+  const shouldShowAsLibras = (index: number) => {
+    // Usar o índice para garantir consistência nas opções
+    const probability = getLibrasProbability();
+    return (index * 0.123456 + correctAnswers * 0.789) % 1 < probability;
+  };
+
   return (
     <div className="min-h-screen bg-gradient-to-br from-blue-50 via-purple-50 to-pink-50 p-4">
-      {/* Header */}
-      <div className="max-w-4xl mx-auto mb-6">
-        <div className="flex items-center justify-between bg-white/80 backdrop-blur-sm rounded-lg p-4 shadow-lg">
-          <div className="flex items-center gap-3">
-            <User className="h-5 w-5 text-blue-600" />
-            <span className="text-sm font-medium text-gray-700">{userName}</span>
-          </div>
-          <div className="flex items-center gap-3">
-            <Calculator className="h-5 w-5 text-purple-600" />
-            <span className="text-sm font-medium text-gray-700">
-              Questão {questionNumber} de {totalQuestions}
-            </span>
-          </div>
-        </div>
-      </div>
+      <UserHeader 
+        userName={userName}
+        questionNumber={questionNumber}
+        totalQuestions={totalQuestions}
+        onLogout={onLogout}
+      />
 
       {/* Progress Bar */}
       <div className="max-w-4xl mx-auto mb-8">
@@ -116,19 +125,19 @@ const QuestionScreen = ({
               <div className="text-center space-y-6">
                 <div className="text-4xl font-mono font-bold text-gray-800">
                   <div className="flex items-center justify-center gap-4 mb-4">
-                    {/* Primeiro número - alternando entre LIBRAS e número */}
+                    {/* Primeiro número - probabilidade de mostrar em LIBRAS */}
                     <div className="text-center">
                       <div className="text-6xl mb-2">
-                        {Math.random() > 0.5 ? question.librasSigns.num1 : question.num1}
+                        {shouldShowAsLibras(0) ? question.librasSigns.num1 : question.num1}
                       </div>
                     </div>
                     <div className="text-5xl text-purple-600 font-bold">
                       {getOperationSymbol(question.operationType)}
                     </div>
-                    {/* Segundo número - alternando entre LIBRAS e número */}
+                    {/* Segundo número - probabilidade de mostrar em LIBRAS */}
                     <div className="text-center">
                       <div className="text-6xl mb-2">
-                        {Math.random() > 0.5 ? question.librasSigns.num2 : question.num2}
+                        {shouldShowAsLibras(1) ? question.librasSigns.num2 : question.num2}
                       </div>
                     </div>
                     <div className="text-5xl text-purple-600 font-bold">=</div>
@@ -136,6 +145,11 @@ const QuestionScreen = ({
                   </div>
                 </div>
                 <div className="text-lg text-gray-600">
+                  {correctAnswers > 3 && (
+                    <div className="mb-2 text-green-600 font-medium">
+                      🎉 Nível {Math.floor(correctAnswers / 3)}: Mais sinais LIBRAS aparecem!
+                    </div>
+                  )}
                   Resolva a operação acima (os sinais 🤟 representam números em LIBRAS)
                 </div>
               </div>
@@ -148,8 +162,8 @@ const QuestionScreen = ({
               </h3>
               <div className="grid grid-cols-2 gap-4">
                 {question.options.map((option, index) => {
-                  // Aleatoriamente mostrar em LIBRAS ou número
-                  const showAsLibras = Math.random() > 0.5;
+                  // Usar função consistente para determinar se mostra em LIBRAS
+                  const showAsLibras = shouldShowAsLibras(index + 2);
                   const librasSign = question.librasNumbers[option] || option.toString();
                   
                   return (
@@ -172,12 +186,9 @@ const QuestionScreen = ({
                       }`}
                       variant={showFeedback ? "default" : selectedAnswer === option ? "default" : "outline"}
                     >
-                      <div className="flex flex-col items-center gap-2">
-                        <div className="text-3xl">
+                      <div className="flex items-center justify-center">
+                        <div className="text-4xl">
                           {showAsLibras ? librasSign : option}
-                        </div>
-                        <div className="text-sm opacity-70">
-                          {showAsLibras ? `(${option})` : `(${librasSign})`}
                         </div>
                       </div>
                     </Button>
