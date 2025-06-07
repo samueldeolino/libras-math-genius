@@ -1,9 +1,11 @@
 
+import { useEffect } from "react";
 import { Button } from "@/components/ui/button";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { Badge } from "@/components/ui/badge";
 import { Trophy, RotateCcw, CheckCircle, XCircle, User, Target } from "lucide-react";
 import { Question } from "../pages/Index";
+import { supabase } from "@/integrations/supabase/client";
 
 interface ResultsScreenProps {
   results: {
@@ -12,13 +14,54 @@ interface ResultsScreenProps {
     total: number;
   };
   userEmail: string;
+  userName: string;
   onRestart: () => void;
   questions: Question[];
   userAnswers: number[];
 }
 
-const ResultsScreen = ({ results, userEmail, onRestart, questions, userAnswers }: ResultsScreenProps) => {
+const ResultsScreen = ({ results, userEmail, userName, onRestart, questions, userAnswers }: ResultsScreenProps) => {
   const percentage = Math.round((results.correct / results.total) * 100);
+  
+  useEffect(() => {
+    // Salvar resultados no banco de dados
+    const saveResults = async () => {
+      try {
+        // Buscar dados atuais do usuário
+        const { data: currentData, error: fetchError } = await supabase
+          .from('usuarios')
+          .select('acertos, erros, questoes_resolvidas')
+          .eq('email', userEmail)
+          .single();
+
+        if (fetchError) {
+          console.error('Erro ao buscar dados atuais:', fetchError);
+          return;
+        }
+
+        // Atualizar com os novos resultados
+        const { error: updateError } = await supabase
+          .from('usuarios')
+          .update({
+            acertos: currentData.acertos + results.correct,
+            erros: currentData.erros + results.incorrect,
+            questoes_resolvidas: currentData.questoes_resolvidas + results.total,
+            updated_at: new Date().toISOString()
+          })
+          .eq('email', userEmail);
+
+        if (updateError) {
+          console.error('Erro ao salvar resultados:', updateError);
+        } else {
+          console.log('Resultados salvos com sucesso!');
+        }
+      } catch (error) {
+        console.error('Erro ao salvar no banco:', error);
+      }
+    };
+
+    saveResults();
+  }, [results, userEmail]);
   
   const getPerformanceLevel = (percentage: number) => {
     if (percentage >= 90) return { level: "Excelente!", color: "bg-green-500", emoji: "🏆" };
@@ -46,7 +89,7 @@ const ResultsScreen = ({ results, userEmail, onRestart, questions, userAnswers }
         <div className="flex items-center justify-between bg-white/80 backdrop-blur-sm rounded-lg p-4 shadow-lg">
           <div className="flex items-center gap-3">
             <User className="h-5 w-5 text-blue-600" />
-            <span className="text-sm font-medium text-gray-700">{userEmail}</span>
+            <span className="text-sm font-medium text-gray-700">{userName}</span>
           </div>
           <div className="flex items-center gap-3">
             <Trophy className="h-5 w-5 text-yellow-600" />

@@ -5,21 +5,29 @@ import { Input } from "@/components/ui/input";
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card";
 import { Label } from "@/components/ui/label";
 import { GraduationCap, Calculator } from "lucide-react";
+import { supabase } from "@/integrations/supabase/client";
 
 interface LoginFormProps {
-  onLogin: (email: string) => void;
+  onLogin: (email: string, nome: string) => void;
 }
 
 const LoginForm = ({ onLogin }: LoginFormProps) => {
   const [email, setEmail] = useState("");
+  const [nome, setNome] = useState("");
   const [password, setPassword] = useState("");
   const [error, setError] = useState("");
+  const [isLogin, setIsLogin] = useState(true);
 
-  const handleSubmit = (e: React.FormEvent) => {
+  const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
     
     if (!email || !password) {
       setError("Por favor, preencha todos os campos");
+      return;
+    }
+
+    if (!isLogin && !nome) {
+      setError("Por favor, preencha o nome");
       return;
     }
 
@@ -33,7 +41,67 @@ const LoginForm = ({ onLogin }: LoginFormProps) => {
       return;
     }
 
-    onLogin(email);
+    try {
+      if (isLogin) {
+        // Login
+        const { data, error } = await supabase.auth.signInWithPassword({
+          email,
+          password,
+        });
+
+        if (error) {
+          setError("Email ou senha incorretos");
+          return;
+        }
+
+        // Buscar dados do usuário na tabela usuarios
+        const { data: userData, error: userError } = await supabase
+          .from('usuarios')
+          .select('nome')
+          .eq('email', email)
+          .single();
+
+        if (userError) {
+          setError("Erro ao buscar dados do usuário");
+          return;
+        }
+
+        onLogin(email, userData.nome);
+      } else {
+        // Cadastro
+        const { data, error } = await supabase.auth.signUp({
+          email,
+          password,
+        });
+
+        if (error) {
+          setError("Erro ao criar conta: " + error.message);
+          return;
+        }
+
+        // Criar registro na tabela usuarios
+        const { error: insertError } = await supabase
+          .from('usuarios')
+          .insert([
+            {
+              nome,
+              email,
+              acertos: 0,
+              erros: 0,
+              questoes_resolvidas: 0
+            }
+          ]);
+
+        if (insertError) {
+          setError("Erro ao salvar dados do usuário");
+          return;
+        }
+
+        onLogin(email, nome);
+      }
+    } catch (err) {
+      setError("Erro interno. Tente novamente.");
+    }
   };
 
   return (
@@ -58,6 +126,22 @@ const LoginForm = ({ onLogin }: LoginFormProps) => {
         
         <CardContent>
           <form onSubmit={handleSubmit} className="space-y-4">
+            {!isLogin && (
+              <div className="space-y-2">
+                <Label htmlFor="nome" className="text-sm font-medium text-gray-700">
+                  Nome
+                </Label>
+                <Input
+                  id="nome"
+                  type="text"
+                  placeholder="Seu nome completo"
+                  value={nome}
+                  onChange={(e) => setNome(e.target.value)}
+                  className="w-full"
+                />
+              </div>
+            )}
+            
             <div className="space-y-2">
               <Label htmlFor="email" className="text-sm font-medium text-gray-700">
                 Email
@@ -96,8 +180,18 @@ const LoginForm = ({ onLogin }: LoginFormProps) => {
               type="submit" 
               className="w-full bg-gradient-to-r from-blue-500 to-purple-600 hover:from-blue-600 hover:to-purple-700 text-white font-medium py-2 px-4 rounded-md transition-all duration-200"
             >
-              Entrar no Sistema
+              {isLogin ? "Entrar no Sistema" : "Criar Conta"}
             </Button>
+
+            <div className="text-center">
+              <button
+                type="button"
+                onClick={() => setIsLogin(!isLogin)}
+                className="text-sm text-blue-600 hover:text-blue-800"
+              >
+                {isLogin ? "Não tem conta? Cadastre-se" : "Já tem conta? Faça login"}
+              </button>
+            </div>
           </form>
 
           <div className="mt-6 text-center text-sm text-gray-500">

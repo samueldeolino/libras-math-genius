@@ -12,6 +12,7 @@ interface QuestionScreenProps {
   totalQuestions: number;
   onAnswer: (answer: number) => void;
   userEmail: string;
+  userName: string;
 }
 
 const QuestionScreen = ({
@@ -19,7 +20,8 @@ const QuestionScreen = ({
   questionNumber,
   totalQuestions,
   onAnswer,
-  userEmail
+  userEmail,
+  userName
 }: QuestionScreenProps) => {
   const [selectedAnswer, setSelectedAnswer] = useState<number | null>(null);
   const [showFeedback, setShowFeedback] = useState(false);
@@ -74,7 +76,7 @@ const QuestionScreen = ({
         <div className="flex items-center justify-between bg-white/80 backdrop-blur-sm rounded-lg p-4 shadow-lg">
           <div className="flex items-center gap-3">
             <User className="h-5 w-5 text-blue-600" />
-            <span className="text-sm font-medium text-gray-700">{userEmail}</span>
+            <span className="text-sm font-medium text-gray-700">{userName}</span>
           </div>
           <div className="flex items-center gap-3">
             <Calculator className="h-5 w-5 text-purple-600" />
@@ -109,61 +111,78 @@ const QuestionScreen = ({
           </CardHeader>
 
           <CardContent className="space-y-8">
-            {/* Operação "armada" com LIBRAS */}
+            {/* Operação "armada" com LIBRAS misturado */}
             <div className="bg-gradient-to-r from-gray-50 to-gray-100 rounded-xl p-8">
               <div className="text-center space-y-6">
                 <div className="text-4xl font-mono font-bold text-gray-800">
                   <div className="flex items-center justify-center gap-4 mb-4">
+                    {/* Primeiro número - alternando entre LIBRAS e número */}
                     <div className="text-center">
-                      <div className="text-6xl mb-2">{question.librasSigns.num1}</div>
-                      <div className="text-2xl text-gray-600">{question.num1}</div>
+                      <div className="text-6xl mb-2">
+                        {Math.random() > 0.5 ? question.librasSigns.num1 : question.num1}
+                      </div>
                     </div>
                     <div className="text-5xl text-purple-600 font-bold">
                       {getOperationSymbol(question.operationType)}
                     </div>
+                    {/* Segundo número - alternando entre LIBRAS e número */}
                     <div className="text-center">
-                      <div className="text-6xl mb-2">{question.librasSigns.num2}</div>
-                      <div className="text-2xl text-gray-600">{question.num2}</div>
+                      <div className="text-6xl mb-2">
+                        {Math.random() > 0.5 ? question.librasSigns.num2 : question.num2}
+                      </div>
                     </div>
                     <div className="text-5xl text-purple-600 font-bold">=</div>
                     <div className="text-5xl text-purple-600 font-bold">?</div>
                   </div>
                 </div>
                 <div className="text-lg text-gray-600">
-                  Os sinais de LIBRAS acima representam os números da operação
+                  Resolva a operação acima (os sinais 🤟 representam números em LIBRAS)
                 </div>
               </div>
             </div>
 
-            {/* Opções de resposta */}
+            {/* Opções de resposta misturando LIBRAS e números */}
             <div className="space-y-4">
               <h3 className="text-xl font-semibold text-center text-gray-800 mb-6">
                 Escolha a resposta correta:
               </h3>
               <div className="grid grid-cols-2 gap-4">
-                {question.options.map((option, index) => (
-                  <Button
-                    key={index}
-                    onClick={() => handleAnswerClick(option)}
-                    disabled={showFeedback}
-                    className={`h-16 text-xl font-semibold transition-all duration-200 ${
-                      showFeedback
-                        ? selectedAnswer === option
-                          ? option === question.result
+                {question.options.map((option, index) => {
+                  // Aleatoriamente mostrar em LIBRAS ou número
+                  const showAsLibras = Math.random() > 0.5;
+                  const librasSign = question.librasNumbers[option] || option.toString();
+                  
+                  return (
+                    <Button
+                      key={index}
+                      onClick={() => handleAnswerClick(option)}
+                      disabled={showFeedback}
+                      className={`h-20 text-xl font-semibold transition-all duration-200 ${
+                        showFeedback
+                          ? selectedAnswer === option
+                            ? option === question.result
+                              ? 'bg-green-500 hover:bg-green-500 text-white'
+                              : 'bg-red-500 hover:bg-red-500 text-white'
+                            : option === question.result
                             ? 'bg-green-500 hover:bg-green-500 text-white'
-                            : 'bg-red-500 hover:bg-red-500 text-white'
-                          : option === question.result
-                          ? 'bg-green-500 hover:bg-green-500 text-white'
-                          : 'bg-gray-300 hover:bg-gray-300 text-gray-500'
-                        : selectedAnswer === option
-                        ? 'bg-purple-600 hover:bg-purple-700 text-white'
-                        : 'bg-white hover:bg-purple-50 text-purple-600 border-2 border-purple-200 hover:border-purple-300'
-                    }`}
-                    variant={showFeedback ? "default" : selectedAnswer === option ? "default" : "outline"}
-                  >
-                    {option}
-                  </Button>
-                ))}
+                            : 'bg-gray-300 hover:bg-gray-300 text-gray-500'
+                          : selectedAnswer === option
+                          ? 'bg-purple-600 hover:bg-purple-700 text-white'
+                          : 'bg-white hover:bg-purple-50 text-purple-600 border-2 border-purple-200 hover:border-purple-300'
+                      }`}
+                      variant={showFeedback ? "default" : selectedAnswer === option ? "default" : "outline"}
+                    >
+                      <div className="flex flex-col items-center gap-2">
+                        <div className="text-3xl">
+                          {showAsLibras ? librasSign : option}
+                        </div>
+                        <div className="text-sm opacity-70">
+                          {showAsLibras ? `(${option})` : `(${librasSign})`}
+                        </div>
+                      </div>
+                    </Button>
+                  );
+                })}
               </div>
             </div>
 

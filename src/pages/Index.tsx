@@ -13,11 +13,13 @@ export interface Question {
   result: number;
   options: number[];
   librasSigns: { num1: string; num2: string };
+  librasNumbers: { [key: number]: string };
 }
 
 const Index = () => {
   const [isLoggedIn, setIsLoggedIn] = useState(false);
   const [currentUser, setCurrentUser] = useState<string>("");
+  const [userName, setUserName] = useState<string>("");
   const [currentQuestionIndex, setCurrentQuestionIndex] = useState(0);
   const [userAnswers, setUserAnswers] = useState<number[]>([]);
   const [showResults, setShowResults] = useState(false);
@@ -26,8 +28,9 @@ const Index = () => {
   const librasNumbers: { [key: number]: string } = {
     1: "👆", 2: "✌️", 3: "👌", 4: "🤟", 5: "🖐️",
     6: "🤙", 7: "👇", 8: "🤘", 9: "👊", 10: "✊",
-    12: "👆✌️", 15: "👆🖐️", 16: "👆🤙", 18: "👆🤘",
-    20: "✌️✊", 21: "✌️👆", 24: "✌️🤟", 25: "✌️🖐️"
+    11: "👆👆", 12: "👆✌️", 13: "👆👌", 14: "👆🤟", 15: "👆🖐️",
+    16: "👆🤙", 17: "👆👇", 18: "👆🤘", 19: "👆👊", 20: "✌️✊",
+    21: "✌️👆", 22: "✌️✌️", 23: "✌️👌", 24: "✌️🤟", 25: "✌️🖐️"
   };
 
   // Gerar questões matemáticas
@@ -76,7 +79,8 @@ const Index = () => {
         librasSigns: {
           num1: librasNumbers[q.num1] || q.num1.toString(),
           num2: librasNumbers[q.num2] || q.num2.toString()
-        }
+        },
+        librasNumbers
       });
     });
 
@@ -93,7 +97,8 @@ const Index = () => {
         librasSigns: {
           num1: librasNumbers[q.num1] || q.num1.toString(),
           num2: librasNumbers[q.num2] || q.num2.toString()
-        }
+        },
+        librasNumbers
       });
     });
 
@@ -110,7 +115,8 @@ const Index = () => {
         librasSigns: {
           num1: librasNumbers[q.num1] || q.num1.toString(),
           num2: librasNumbers[q.num2] || q.num2.toString()
-        }
+        },
+        librasNumbers
       });
     });
 
@@ -127,7 +133,8 @@ const Index = () => {
         librasSigns: {
           num1: librasNumbers[q.num1] || q.num1.toString(),
           num2: librasNumbers[q.num2] || q.num2.toString()
-        }
+        },
+        librasNumbers
       });
     });
 
@@ -148,8 +155,9 @@ const Index = () => {
 
   const [questions] = useState<Question[]>(generateQuestions());
 
-  const handleLogin = (email: string) => {
+  const handleLogin = (email: string, nome: string) => {
     setCurrentUser(email);
+    setUserName(nome);
     setIsLoggedIn(true);
   };
 
@@ -194,6 +202,7 @@ const Index = () => {
       <ResultsScreen
         results={results}
         userEmail={currentUser}
+        userName={userName}
         onRestart={resetGame}
         questions={questions}
         userAnswers={userAnswers}
@@ -208,6 +217,7 @@ const Index = () => {
       totalQuestions={questions.length}
       onAnswer={handleAnswer}
       userEmail={currentUser}
+      userName={userName}
     />
   );
 };
