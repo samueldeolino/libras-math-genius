@@ -73,18 +73,61 @@ const QuestionScreen = ({
 
   const progress = (questionNumber / totalQuestions) * 100;
 
+  // Determinar o tipo de legenda baseado no número da questão
+  const getLegendType = () => {
+    if (questionNumber <= 4) return 'full'; // LIBRAS + números
+    if (questionNumber <= 8) return 'libras'; // apenas LIBRAS
+    return 'none'; // sem legenda
+  };
+
   // Calcular probabilidade de mostrar LIBRAS baseado nos acertos
   const getLibrasProbability = () => {
-    const baseProb = 0.3; // 30% inicial
-    const maxProb = 0.8; // 80% máximo
+    const baseProb = 0.3;
+    const maxProb = 0.8;
     const progressFactor = correctAnswers / (questionNumber - 1 || 1);
     return Math.min(maxProb, baseProb + (progressFactor * 0.5));
   };
 
   const shouldShowAsLibras = (index: number) => {
-    // Usar o índice para garantir consistência nas opções
     const probability = getLibrasProbability();
     return (index * 0.123456 + correctAnswers * 0.789) % 1 < probability;
+  };
+
+  // Criar legenda com base no tipo
+  const createLegend = () => {
+    const legendType = getLegendType();
+    if (legendType === 'none') return null;
+
+    const relevantNumbers = new Set([
+      question.num1,
+      question.num2,
+      question.result,
+      ...question.options
+    ]);
+
+    const sortedNumbers = Array.from(relevantNumbers).sort((a, b) => a - b);
+
+    return (
+      <div className="bg-blue-50 rounded-xl p-6 mb-6">
+        <h3 className="text-lg font-semibold text-blue-800 mb-4 text-center">
+          {legendType === 'full' ? '📚 Legenda: Sinais LIBRAS e Números' : '📚 Legenda: Sinais LIBRAS'}
+        </h3>
+        <div className="grid grid-cols-3 md:grid-cols-5 gap-4">
+          {sortedNumbers.slice(0, 15).map((num) => (
+            <div key={num} className="text-center bg-white rounded-lg p-3 shadow-sm">
+              <div className="text-3xl mb-2">
+                {question.librasNumbers[num] || num.toString()}
+              </div>
+              {legendType === 'full' && (
+                <div className="text-lg font-semibold text-gray-700">
+                  {num}
+                </div>
+              )}
+            </div>
+          ))}
+        </div>
+      </div>
+    );
   };
 
   return (
@@ -120,12 +163,14 @@ const QuestionScreen = ({
           </CardHeader>
 
           <CardContent className="space-y-8">
+            {/* Legenda */}
+            {createLegend()}
+
             {/* Operação "armada" com LIBRAS misturado */}
             <div className="bg-gradient-to-r from-gray-50 to-gray-100 rounded-xl p-8">
               <div className="text-center space-y-6">
                 <div className="text-4xl font-mono font-bold text-gray-800">
                   <div className="flex items-center justify-center gap-4 mb-4">
-                    {/* Primeiro número - probabilidade de mostrar em LIBRAS */}
                     <div className="text-center">
                       <div className="text-6xl mb-2">
                         {shouldShowAsLibras(0) ? question.librasSigns.num1 : question.num1}
@@ -134,7 +179,6 @@ const QuestionScreen = ({
                     <div className="text-5xl text-purple-600 font-bold">
                       {getOperationSymbol(question.operationType)}
                     </div>
-                    {/* Segundo número - probabilidade de mostrar em LIBRAS */}
                     <div className="text-center">
                       <div className="text-6xl mb-2">
                         {shouldShowAsLibras(1) ? question.librasSigns.num2 : question.num2}
@@ -145,12 +189,17 @@ const QuestionScreen = ({
                   </div>
                 </div>
                 <div className="text-lg text-gray-600">
+                  {getLegendType() !== 'none' && (
+                    <div className="mb-2 text-blue-600 font-medium">
+                      💡 Use a legenda acima para identificar os sinais LIBRAS
+                    </div>
+                  )}
                   {correctAnswers > 3 && (
                     <div className="mb-2 text-green-600 font-medium">
                       🎉 Nível {Math.floor(correctAnswers / 3)}: Mais sinais LIBRAS aparecem!
                     </div>
                   )}
-                  Resolva a operação acima (os sinais 🤟 representam números em LIBRAS)
+                  Resolva a operação acima
                 </div>
               </div>
             </div>
@@ -162,7 +211,6 @@ const QuestionScreen = ({
               </h3>
               <div className="grid grid-cols-2 gap-4">
                 {question.options.map((option, index) => {
-                  // Usar função consistente para determinar se mostra em LIBRAS
                   const showAsLibras = shouldShowAsLibras(index + 2);
                   const librasSign = question.librasNumbers[option] || option.toString();
                   
