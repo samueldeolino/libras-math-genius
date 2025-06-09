@@ -98,22 +98,29 @@ const QuestionScreen = ({
     const legendType = getLegendType();
     if (legendType === 'none') return null;
 
-    const relevantNumbers = new Set([
-      question.num1,
-      question.num2,
-      question.result,
-      ...question.options
-    ]);
-
-    const sortedNumbers = Array.from(relevantNumbers).sort((a, b) => a - b);
+    let numbersToShow = [];
+    
+    if (legendType === 'full') {
+      // Para legenda completa, mostrar apenas números relevantes
+      const relevantNumbers = new Set([
+        question.num1,
+        question.num2,
+        question.result,
+        ...question.options
+      ]);
+      numbersToShow = Array.from(relevantNumbers).sort((a, b) => a - b).slice(0, 15);
+    } else if (legendType === 'libras') {
+      // Para legenda apenas LIBRAS, mostrar números de 1 a 19
+      numbersToShow = Array.from({ length: 19 }, (_, i) => i + 1);
+    }
 
     return (
       <div className="bg-blue-50 rounded-xl p-6 mb-6">
         <h3 className="text-lg font-semibold text-blue-800 mb-4 text-center">
-          {legendType === 'full' ? '📚 Legenda: Sinais LIBRAS e Números' : '📚 Legenda: Sinais LIBRAS'}
+          {legendType === 'full' ? '📚 Legenda: Sinais LIBRAS e Números' : '📚 Legenda: Sinais LIBRAS (1-19)'}
         </h3>
-        <div className="grid grid-cols-3 md:grid-cols-5 gap-4">
-          {sortedNumbers.slice(0, 15).map((num) => (
+        <div className={`grid gap-4 ${legendType === 'libras' ? 'grid-cols-4 md:grid-cols-7' : 'grid-cols-3 md:grid-cols-5'}`}>
+          {numbersToShow.map((num) => (
             <div key={num} className="text-center bg-white rounded-lg p-3 shadow-sm">
               <div className="text-3xl mb-2">
                 {question.librasNumbers[num] || num.toString()}
@@ -123,9 +130,19 @@ const QuestionScreen = ({
                   {num}
                 </div>
               )}
+              {legendType === 'libras' && (
+                <div className="text-sm text-gray-500">
+                  {num}
+                </div>
+              )}
             </div>
           ))}
         </div>
+        {legendType === 'libras' && (
+          <div className="mt-4 text-center text-sm text-blue-600">
+            💡 Memorize a posição dos sinais para facilitar a aprendizagem
+          </div>
+        )}
       </div>
     );
   };
