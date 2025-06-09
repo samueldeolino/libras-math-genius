@@ -1,4 +1,3 @@
-
 import { useState } from "react";
 import { Button } from "@/components/ui/button";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
@@ -77,7 +76,7 @@ const QuestionScreen = ({
   const getLegendType = () => {
     if (questionNumber <= 4) return 'full'; // apenas LIBRAS (sem números)
     if (questionNumber <= 8) return 'libras'; // apenas LIBRAS (1-19)
-    return 'none'; // sem legenda
+    return 'libras'; // mudança: sempre mostrar legenda LIBRAS para ajudar
   };
 
   // Calcular probabilidade de mostrar LIBRAS baseado nos acertos
@@ -125,24 +124,12 @@ const QuestionScreen = ({
               <div className="text-3xl mb-2">
                 {question.librasNumbers[num] || num.toString()}
               </div>
-              {legendType === 'libras' && (
-                <div className="text-sm text-gray-500">
-                  {num}
-                </div>
-              )}
             </div>
           ))}
         </div>
-        {legendType === 'libras' && (
-          <div className="mt-4 text-center text-sm text-blue-600">
-            💡 Memorize a posição dos sinais para facilitar a aprendizagem
-          </div>
-        )}
-        {legendType === 'full' && (
-          <div className="mt-4 text-center text-sm text-blue-600">
-            💡 Use os sinais LIBRAS acima para resolver a operação
-          </div>
-        )}
+        <div className="mt-4 text-center text-sm text-blue-600">
+          💡 Use os sinais LIBRAS acima para resolver a operação
+        </div>
       </div>
     );
   };
