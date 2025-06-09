@@ -1,3 +1,4 @@
+
 import { useEffect } from "react";
 import { Button } from "@/components/ui/button";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
@@ -28,33 +29,52 @@ const ResultsScreen = ({ results, userEmail, userName, onRestart, onLogout, ques
     // Salvar resultados no banco de dados
     const saveResults = async () => {
       try {
-        // Buscar dados atuais do usuário
-        const { data: currentData, error: fetchError } = await supabase
+        // Primeiro, verificar se o usuário já existe
+        const { data: existingUser, error: fetchError } = await supabase
           .from('usuarios')
           .select('acertos, erros, questoes_resolvidas')
           .eq('email', userEmail)
-          .single();
+          .maybeSingle();
 
         if (fetchError) {
-          console.error('Erro ao buscar dados atuais:', fetchError);
+          console.error('Erro ao buscar dados do usuário:', fetchError);
           return;
         }
 
-        // Atualizar com os novos resultados
-        const { error: updateError } = await supabase
-          .from('usuarios')
-          .update({
-            acertos: currentData.acertos + results.correct,
-            erros: currentData.erros + results.incorrect,
-            questoes_resolvidas: currentData.questoes_resolvidas + results.total,
-            updated_at: new Date().toISOString()
-          })
-          .eq('email', userEmail);
+        if (existingUser) {
+          // Usuário existe, atualizar dados
+          const { error: updateError } = await supabase
+            .from('usuarios')
+            .update({
+              acertos: existingUser.acertos + results.correct,
+              erros: existingUser.erros + results.incorrect,
+              questoes_resolvidas: existingUser.questoes_resolvidas + results.total,
+              updated_at: new Date().toISOString()
+            })
+            .eq('email', userEmail);
 
-        if (updateError) {
-          console.error('Erro ao salvar resultados:', updateError);
+          if (updateError) {
+            console.error('Erro ao atualizar resultados:', updateError);
+          } else {
+            console.log('Resultados atualizados com sucesso!');
+          }
         } else {
-          console.log('Resultados salvos com sucesso!');
+          // Usuário não existe, criar novo registro
+          const { error: insertError } = await supabase
+            .from('usuarios')
+            .insert({
+              email: userEmail,
+              nome: userName,
+              acertos: results.correct,
+              erros: results.incorrect,
+              questoes_resolvidas: results.total
+            });
+
+          if (insertError) {
+            console.error('Erro ao criar novo usuário:', insertError);
+          } else {
+            console.log('Novo usuário criado com sucesso!');
+          }
         }
       } catch (error) {
         console.error('Erro ao salvar no banco:', error);
@@ -62,7 +82,7 @@ const ResultsScreen = ({ results, userEmail, userName, onRestart, onLogout, ques
     };
 
     saveResults();
-  }, [results, userEmail]);
+  }, [results, userEmail, userName]);
   
   const getPerformanceLevel = (percentage: number) => {
     if (percentage >= 90) return { level: "Excelente!", color: "bg-green-500", emoji: "🏆" };
@@ -82,6 +102,19 @@ const ResultsScreen = ({ results, userEmail, userName, onRestart, onLogout, ques
       default: return 'Operação';
     }
   };
+
+  const getOperationSymbol = (type: string) => {
+    switch (type) {
+      case 'soma': return '+';
+      case 'subtracao': return '-';
+      case 'multiplicacao': return '×';
+      case 'divisao': return '÷';
+      default: return '+';
+    }
+  };
+
+  // Filtrar apenas as questões que o usuário errou
+  const wrongAnswers = questions.filter((question, index) => userAnswers[index] !== question.result);
 
   return (
     <div className="min-h-screen bg-gradient-to-br from-blue-50 via-purple-50 to-pink-50 p-4">
@@ -141,11 +174,72 @@ const ResultsScreen = ({ results, userEmail, userName, onRestart, onLogout, ques
           </CardContent>
         </Card>
 
-        {/* Detalhamento por Questão */}
+        {/* Resumo das Questões Erradas */}
+        {wrongAnswers.length > 0 && (
+          <Card className="shadow-xl border-0 bg-white/90 backdrop-blur-sm">
+            <CardHeader>
+              <CardTitle className="text-xl font-bold text-gray-800 flex items-center gap-2">
+                <XCircle className="h-6 w-6 text-red-600" />
+                Questões que Você Errou - Vamos Revisar!
+              </CardTitle>
+              <p className="text-sm text-gray-600">
+                Revise estas questões para melhorar seu desempenho
+              </p>
+            </CardHeader>
+            <CardContent>
+              <div className="space-y-4">
+                {wrongAnswers.map((question, wrongIndex) => {
+                  const originalIndex = questions.findIndex(q => q.id === question.id);
+                  const userAnswer = userAnswers[originalIndex];
+                  
+                  return (
+                    <div
+                      key={question.id}
+                      className="p-4 rounded-lg border-2 bg-red-50 border-red-200"
+                    >
+                      <div className="flex items-center justify-between mb-3">
+                        <Badge variant="destructive">
+                          {getOperationName(question.operationType)}
+                        </Badge>
+                        <span className="text-sm text-gray-500">
+                          Questão {originalIndex + 1}
+                        </span>
+                      </div>
+                      
+                      {/* Operação */}
+                      <div className="bg-white rounded-lg p-4 mb-3">
+                        <div className="text-center text-2xl font-mono font-bold text-gray-800">
+                          {question.num1} {getOperationSymbol(question.operationType)} {question.num2} = ?
+                        </div>
+                      </div>
+                      
+                      {/* Respostas */}
+                      <div className="flex items-center justify-between text-sm">
+                        <span className="text-red-600 font-semibold">
+                          ❌ Sua resposta: {userAnswer}
+                        </span>
+                        <span className="text-green-600 font-semibold">
+                          ✅ Resposta correta: {question.result}
+                        </span>
+                      </div>
+                      
+                      {/* Explicação */}
+                      <div className="mt-2 p-2 bg-blue-50 rounded text-sm text-blue-800">
+                        💡 <strong>Explicação:</strong> {question.num1} {getOperationSymbol(question.operationType)} {question.num2} = {question.result}
+                      </div>
+                    </div>
+                  );
+                })}
+              </div>
+            </CardContent>
+          </Card>
+        )}
+
+        {/* Detalhamento Completo das Respostas */}
         <Card className="shadow-xl border-0 bg-white/90 backdrop-blur-sm">
           <CardHeader>
             <CardTitle className="text-xl font-bold text-gray-800">
-              Detalhamento das Respostas
+              Detalhamento Completo das Respostas
             </CardTitle>
           </CardHeader>
           <CardContent>
@@ -167,9 +261,7 @@ const ResultsScreen = ({ results, userEmail, userName, onRestart, onLogout, ques
                           {getOperationName(question.operationType)}
                         </Badge>
                         <span className="font-mono text-lg">
-                          {question.num1} {question.operation.includes('+') ? '+' : 
-                           question.operation.includes('-') ? '-' :
-                           question.operation.includes('×') ? '×' : '÷'} {question.num2} = ?
+                          {question.num1} {getOperationSymbol(question.operationType)} {question.num2} = ?
                         </span>
                       </div>
                       <div className="flex items-center gap-2">
