@@ -17,6 +17,7 @@ const LoginForm = ({ onLogin }: LoginFormProps) => {
   const [password, setPassword] = useState("");
   const [error, setError] = useState("");
   const [isLogin, setIsLogin] = useState(true);
+  const [showEmailConfirmation, setShowEmailConfirmation] = useState(false);
 
   const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
@@ -50,7 +51,19 @@ const LoginForm = ({ onLogin }: LoginFormProps) => {
         });
 
         if (error) {
+          if (error.message.includes("Email not confirmed")) {
+            setError("Por favor, confirme seu email antes de fazer login. Verifique sua caixa de entrada.");
+            return;
+          }
           setError("Email ou senha incorretos");
+          return;
+        }
+
+        // Verificar se o email foi confirmado
+        if (!data.user?.email_confirmed_at) {
+          setError("Por favor, confirme seu email antes de fazer login. Verifique sua caixa de entrada.");
+          // Fazer logout do usuário
+          await supabase.auth.signOut();
           return;
         }
 
@@ -102,12 +115,61 @@ const LoginForm = ({ onLogin }: LoginFormProps) => {
           return;
         }
 
-        onLogin(email, nome);
+        // Mostrar mensagem de confirmação de email
+        setShowEmailConfirmation(true);
+        setError("");
       }
     } catch (err) {
       setError("Erro interno. Tente novamente.");
     }
   };
+
+  if (showEmailConfirmation) {
+    return (
+      <div className="min-h-screen bg-gradient-to-br from-blue-100 via-purple-50 to-pink-100 flex items-center justify-center p-4">
+        <Card className="w-full max-w-md shadow-xl border-0 bg-white/80 backdrop-blur-sm">
+          <CardHeader className="text-center space-y-4">
+            <div className="flex justify-center items-center gap-3">
+              <div className="p-3 bg-gradient-to-r from-blue-500 to-purple-600 rounded-full">
+                <GraduationCap className="h-8 w-8 text-white" />
+              </div>
+              <div className="p-3 bg-gradient-to-r from-purple-500 to-pink-600 rounded-full">
+                <Calculator className="h-8 w-8 text-white" />
+              </div>
+            </div>
+            <CardTitle className="text-2xl font-bold bg-gradient-to-r from-blue-600 to-purple-600 bg-clip-text text-transparent">
+              Confirme seu Email
+            </CardTitle>
+            <CardDescription className="text-gray-600">
+              Enviamos um link de confirmação para seu email
+            </CardDescription>
+          </CardHeader>
+          
+          <CardContent className="text-center space-y-4">
+            <div className="p-4 bg-blue-50 rounded-md">
+              <p className="text-blue-800 text-sm">
+                ✉️ Verifique sua caixa de entrada e clique no link de confirmação para ativar sua conta.
+              </p>
+            </div>
+            
+            <p className="text-gray-600 text-sm">
+              Após confirmar seu email, você poderá fazer login no sistema.
+            </p>
+
+            <Button 
+              onClick={() => {
+                setShowEmailConfirmation(false);
+                setIsLogin(true);
+              }}
+              className="w-full bg-gradient-to-r from-blue-500 to-purple-600 hover:from-blue-600 hover:to-purple-700 text-white font-medium py-2 px-4 rounded-md transition-all duration-200"
+            >
+              Voltar ao Login
+            </Button>
+          </CardContent>
+        </Card>
+      </div>
+    );
+  }
 
   return (
     <div className="min-h-screen bg-gradient-to-br from-blue-100 via-purple-50 to-pink-100 flex items-center justify-center p-4">
