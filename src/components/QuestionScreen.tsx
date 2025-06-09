@@ -75,8 +75,8 @@ const QuestionScreen = ({
 
   // Determinar o tipo de legenda baseado no número da questão
   const getLegendType = () => {
-    if (questionNumber <= 4) return 'full'; // LIBRAS + números
-    if (questionNumber <= 8) return 'libras'; // apenas LIBRAS
+    if (questionNumber <= 4) return 'full'; // apenas LIBRAS (sem números)
+    if (questionNumber <= 8) return 'libras'; // apenas LIBRAS (1-19)
     return 'none'; // sem legenda
   };
 
@@ -101,7 +101,7 @@ const QuestionScreen = ({
     let numbersToShow = [];
     
     if (legendType === 'full') {
-      // Para legenda completa, mostrar apenas números relevantes
+      // Para legenda completa, mostrar apenas números relevantes (sem os números escritos)
       const relevantNumbers = new Set([
         question.num1,
         question.num2,
@@ -117,7 +117,7 @@ const QuestionScreen = ({
     return (
       <div className="bg-blue-50 rounded-xl p-6 mb-6">
         <h3 className="text-lg font-semibold text-blue-800 mb-4 text-center">
-          {legendType === 'full' ? '📚 Legenda: Sinais LIBRAS e Números' : '📚 Legenda: Sinais LIBRAS (1-19)'}
+          {legendType === 'full' ? '📚 Legenda: Sinais LIBRAS' : '📚 Legenda: Sinais LIBRAS (1-19)'}
         </h3>
         <div className={`grid gap-4 ${legendType === 'libras' ? 'grid-cols-4 md:grid-cols-7' : 'grid-cols-3 md:grid-cols-5'}`}>
           {numbersToShow.map((num) => (
@@ -125,11 +125,6 @@ const QuestionScreen = ({
               <div className="text-3xl mb-2">
                 {question.librasNumbers[num] || num.toString()}
               </div>
-              {legendType === 'full' && (
-                <div className="text-lg font-semibold text-gray-700">
-                  {num}
-                </div>
-              )}
               {legendType === 'libras' && (
                 <div className="text-sm text-gray-500">
                   {num}
@@ -141,6 +136,11 @@ const QuestionScreen = ({
         {legendType === 'libras' && (
           <div className="mt-4 text-center text-sm text-blue-600">
             💡 Memorize a posição dos sinais para facilitar a aprendizagem
+          </div>
+        )}
+        {legendType === 'full' && (
+          <div className="mt-4 text-center text-sm text-blue-600">
+            💡 Use os sinais LIBRAS acima para resolver a operação
           </div>
         )}
       </div>
