@@ -1,4 +1,3 @@
-
 import { useState } from "react";
 import { Button } from "@/components/ui/button";
 import { Card, CardContent } from "@/components/ui/card";
@@ -130,7 +129,6 @@ const QuestionScreen = ({
                 <div className="flex items-center justify-center space-x-6 text-5xl py-4">
                   <div className="flex flex-col items-center">
                     <span className="mb-2">{question.librasSigns.num1}</span>
-                    <span className="text-lg text-gray-600">{question.num1}</span>
                   </div>
 
                   <span className="text-3xl text-purple-600 font-bold">
@@ -142,7 +140,6 @@ const QuestionScreen = ({
 
                   <div className="flex flex-col items-center">
                     <span className="mb-2">{question.librasSigns.num2}</span>
-                    <span className="text-lg text-gray-600">{question.num2}</span>
                   </div>
 
                   <span className="text-3xl text-purple-600 font-bold">=</span>
