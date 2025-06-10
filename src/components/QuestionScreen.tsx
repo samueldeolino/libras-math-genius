@@ -48,18 +48,36 @@ const QuestionScreen = ({
       // Salvar a resposta no banco de dados
       const isCorrect = selectedOption === question.result;
 
-      // Atualizar estatísticas do usuário
-      const { error } = await supabase
+      // Primeiro, buscar os valores atuais do usuário
+      const { data: userData, error: fetchError } = await supabase
+        .from('usuarios')
+        .select('acertos, erros, questoes_resolvidas')
+        .eq('email', userEmail)
+        .single();
+
+      if (fetchError) {
+        console.error('Erro ao buscar dados do usuário:', fetchError);
+        toast.error('Erro ao buscar dados do usuário');
+        return;
+      }
+
+      // Calcular os novos valores
+      const newAcertos = (userData.acertos || 0) + (isCorrect ? 1 : 0);
+      const newErros = (userData.erros || 0) + (!isCorrect ? 1 : 0);
+      const newQuestoesResolvidas = (userData.questoes_resolvidas || 0) + 1;
+
+      // Atualizar com os novos valores
+      const { error: updateError } = await supabase
         .from('usuarios')
         .update({
-          acertos: isCorrect ? supabase.rpc('increment', { x: 1 }) : undefined,
-          erros: !isCorrect ? supabase.rpc('increment', { x: 1 }) : undefined,
-          questoes_resolvidas: supabase.rpc('increment', { x: 1 })
+          acertos: newAcertos,
+          erros: newErros,
+          questoes_resolvidas: newQuestoesResolvidas
         })
         .eq('email', userEmail);
 
-      if (error) {
-        console.error('Erro ao salvar estatísticas:', error);
+      if (updateError) {
+        console.error('Erro ao salvar estatísticas:', updateError);
         toast.error('Erro ao salvar estatísticas');
       }
     } catch (err) {
