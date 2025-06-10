@@ -1,8 +1,8 @@
-
 import { useState } from "react";
 import LoginForm from "../components/LoginForm";
 import QuestionScreen from "../components/QuestionScreen";
 import ResultsScreen from "../components/ResultsScreen";
+import TeacherScreen from "../components/TeacherScreen";
 
 export interface Question {
   id: number;
@@ -23,6 +23,7 @@ const Index = () => {
   const [currentQuestionIndex, setCurrentQuestionIndex] = useState(0);
   const [userAnswers, setUserAnswers] = useState<number[]>([]);
   const [showResults, setShowResults] = useState(false);
+  const [showTeacherScreen, setShowTeacherScreen] = useState(false);
 
   // Sinais de LIBRAS para números (representação textual)
   const librasNumbers: { [key: number]: string } = {
@@ -153,12 +154,17 @@ const Index = () => {
     return options.sort(() => Math.random() - 0.5);
   };
 
-  const [questions] = useState<Question[]>(generateQuestions());
+  const [questions, setQuestions] = useState<Question[]>(generateQuestions());
 
   const handleLogin = (email: string, nome: string) => {
     setCurrentUser(email);
     setUserName(nome);
     setIsLoggedIn(true);
+    
+    // Verificar se é professor (por exemplo, se o email contém "professor")
+    if (email.toLowerCase().includes('professor')) {
+      setShowTeacherScreen(true);
+    }
   };
 
   const handleLogout = () => {
@@ -168,6 +174,7 @@ const Index = () => {
     setCurrentQuestionIndex(0);
     setUserAnswers([]);
     setShowResults(false);
+    setShowTeacherScreen(false);
   };
 
   const handleAnswer = (selectedAnswer: number) => {
@@ -212,8 +219,29 @@ const Index = () => {
     return correct;
   };
 
+  const handleQuestionsGenerated = (newQuestions: Question[]) => {
+    setQuestions(newQuestions);
+    setShowTeacherScreen(false);
+    setCurrentQuestionIndex(0);
+    setUserAnswers([]);
+    setShowResults(false);
+  };
+
+  const handleBackFromTeacher = () => {
+    setShowTeacherScreen(false);
+  };
+
   if (!isLoggedIn) {
     return <LoginForm onLogin={handleLogin} />;
+  }
+
+  if (showTeacherScreen) {
+    return (
+      <TeacherScreen
+        onBack={handleBackFromTeacher}
+        onQuestionsGenerated={handleQuestionsGenerated}
+      />
+    );
   }
 
   if (showResults) {
