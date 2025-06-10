@@ -6,10 +6,13 @@ import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
 import { Plus, Minus, X, Divide, ArrowLeft, RefreshCw } from "lucide-react";
 import { Question } from "../pages/Index";
+import UserHeader from "./UserHeader";
 
 interface TeacherScreenProps {
   onBack: () => void;
   onQuestionsGenerated: (questions: Question[]) => void;
+  userName?: string;
+  onLogout?: () => void;
 }
 
 interface OperationRange {
@@ -24,7 +27,7 @@ interface OperationRanges {
   divisao: OperationRange;
 }
 
-const TeacherScreen = ({ onBack, onQuestionsGenerated }: TeacherScreenProps) => {
+const TeacherScreen = ({ onBack, onQuestionsGenerated, userName, onLogout }: TeacherScreenProps) => {
   const [ranges, setRanges] = useState<OperationRanges>({
     soma: { min: 1, max: 20 },
     subtracao: { min: 1, max: 20 },
@@ -169,26 +172,36 @@ const TeacherScreen = ({ onBack, onQuestionsGenerated }: TeacherScreenProps) => 
   return (
     <div className="min-h-screen bg-gradient-to-br from-blue-50 via-purple-50 to-pink-50 p-4">
       {/* Header */}
-      <div className="max-w-6xl mx-auto mb-8">
-        <Card className="bg-white/80 backdrop-blur-sm p-4 shadow-lg">
-          <div className="flex items-center justify-between">
-            <div className="flex items-center gap-3">
-              <Button
-                onClick={onBack}
-                variant="outline"
-                size="sm"
-                className="text-blue-600 border-blue-200 hover:bg-blue-50"
-              >
-                <ArrowLeft className="h-4 w-4 mr-2" />
-                Voltar
-              </Button>
-              <h1 className="text-xl font-bold text-gray-800">
-                🎓 Painel do Professor - Elaboração de Questões
-              </h1>
+      {userName && onLogout ? (
+        <UserHeader 
+          userName={userName}
+          onLogout={onLogout} 
+          isProfessor={true}
+          onTeacherMode={onBack}
+          isTeacherMode={true}
+        />
+      ) : (
+        <div className="max-w-6xl mx-auto mb-8">
+          <Card className="bg-white/80 backdrop-blur-sm p-4 shadow-lg">
+            <div className="flex items-center justify-between">
+              <div className="flex items-center gap-3">
+                <Button
+                  onClick={onBack}
+                  variant="outline"
+                  size="sm"
+                  className="text-blue-600 border-blue-200 hover:bg-blue-50"
+                >
+                  <ArrowLeft className="h-4 w-4 mr-2" />
+                  Voltar
+                </Button>
+                <h1 className="text-xl font-bold text-gray-800">
+                  🎓 Painel do Professor - Elaboração de Questões
+                </h1>
+              </div>
             </div>
-          </div>
-        </Card>
-      </div>
+          </Card>
+        </div>
+      )}
 
       <div className="max-w-6xl mx-auto space-y-8">
         {/* Configuração dos Intervalos */}

@@ -1,3 +1,4 @@
+
 import { useState } from "react";
 import LoginForm from "../components/LoginForm";
 import QuestionScreen from "../components/QuestionScreen";
@@ -20,6 +21,7 @@ const Index = () => {
   const [isLoggedIn, setIsLoggedIn] = useState(false);
   const [currentUser, setCurrentUser] = useState<string>("");
   const [userName, setUserName] = useState<string>("");
+  const [userType, setUserType] = useState<'aluno' | 'professor'>('aluno');
   const [currentQuestionIndex, setCurrentQuestionIndex] = useState(0);
   const [userAnswers, setUserAnswers] = useState<number[]>([]);
   const [showResults, setShowResults] = useState(false);
@@ -156,13 +158,14 @@ const Index = () => {
 
   const [questions, setQuestions] = useState<Question[]>(generateQuestions());
 
-  const handleLogin = (email: string, nome: string) => {
+  const handleLogin = (email: string, nome: string, tipoUsuario: 'aluno' | 'professor') => {
     setCurrentUser(email);
     setUserName(nome);
+    setUserType(tipoUsuario);
     setIsLoggedIn(true);
     
-    // Verificar se é professor (por exemplo, se o email contém "professor")
-    if (email.toLowerCase().includes('professor')) {
+    // Verificar se é professor e mostrar tela de professor se for
+    if (tipoUsuario === 'professor') {
       setShowTeacherScreen(true);
     }
   };
@@ -231,6 +234,10 @@ const Index = () => {
     setShowTeacherScreen(false);
   };
 
+  const toggleTeacherMode = () => {
+    setShowTeacherScreen(!showTeacherScreen);
+  };
+
   if (!isLoggedIn) {
     return <LoginForm onLogin={handleLogin} />;
   }
@@ -240,6 +247,8 @@ const Index = () => {
       <TeacherScreen
         onBack={handleBackFromTeacher}
         onQuestionsGenerated={handleQuestionsGenerated}
+        userName={userName}
+        onLogout={handleLogout}
       />
     );
   }
@@ -269,6 +278,8 @@ const Index = () => {
       userName={userName}
       correctAnswers={getCurrentCorrectAnswers()}
       onLogout={handleLogout}
+      userType={userType}
+      onTeacherMode={userType === 'professor' ? toggleTeacherMode : undefined}
     />
   );
 };

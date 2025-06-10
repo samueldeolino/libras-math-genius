@@ -1,7 +1,7 @@
 
 import { Button } from "@/components/ui/button";
 import { Card } from "@/components/ui/card";
-import { User, Calculator, LogOut } from "lucide-react";
+import { User, Calculator, LogOut, BookOpen } from "lucide-react";
 import { supabase } from "@/integrations/supabase/client";
 
 interface UserHeaderProps {
@@ -9,9 +9,20 @@ interface UserHeaderProps {
   questionNumber?: number;
   totalQuestions?: number;
   onLogout: () => void;
+  isProfessor?: boolean;
+  onTeacherMode?: () => void;
+  isTeacherMode?: boolean;
 }
 
-const UserHeader = ({ userName, questionNumber, totalQuestions, onLogout }: UserHeaderProps) => {
+const UserHeader = ({ 
+  userName, 
+  questionNumber, 
+  totalQuestions, 
+  onLogout,
+  isProfessor,
+  onTeacherMode,
+  isTeacherMode
+}: UserHeaderProps) => {
   const handleLogout = async () => {
     await supabase.auth.signOut();
     onLogout();
@@ -24,6 +35,11 @@ const UserHeader = ({ userName, questionNumber, totalQuestions, onLogout }: User
           <div className="flex items-center gap-3">
             <User className="h-5 w-5 text-blue-600" />
             <span className="text-sm font-medium text-gray-700">{userName}</span>
+            {isProfessor && (
+              <span className="text-xs font-medium text-purple-600 bg-purple-100 px-2 py-0.5 rounded-full">
+                Professor
+              </span>
+            )}
           </div>
           
           <div className="flex items-center gap-4">
@@ -34,6 +50,18 @@ const UserHeader = ({ userName, questionNumber, totalQuestions, onLogout }: User
                   Questão {questionNumber} de {totalQuestions}
                 </span>
               </div>
+            )}
+            
+            {isProfessor && onTeacherMode && (
+              <Button
+                onClick={onTeacherMode}
+                variant="outline"
+                size="sm"
+                className={isTeacherMode ? "text-purple-600 border-purple-200 bg-purple-50" : "text-green-600 border-green-200 hover:bg-green-50"}
+              >
+                <BookOpen className="h-4 w-4 mr-2" />
+                {isTeacherMode ? "Modo Aluno" : "Modo Professor"}
+              </Button>
             )}
             
             <Button

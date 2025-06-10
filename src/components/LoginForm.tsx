@@ -8,7 +8,7 @@ import { GraduationCap, Calculator } from "lucide-react";
 import { supabase } from "@/integrations/supabase/client";
 
 interface LoginFormProps {
-  onLogin: (email: string, nome: string) => void;
+  onLogin: (email: string, nome: string, tipoUsuario: 'aluno' | 'professor') => void;
 }
 
 const LoginForm = ({ onLogin }: LoginFormProps) => {
@@ -18,6 +18,7 @@ const LoginForm = ({ onLogin }: LoginFormProps) => {
   const [error, setError] = useState("");
   const [isLogin, setIsLogin] = useState(true);
   const [showEmailConfirmation, setShowEmailConfirmation] = useState(false);
+  const [tipoUsuario, setTipoUsuario] = useState<'aluno' | 'professor'>('aluno');
 
   const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
@@ -70,7 +71,7 @@ const LoginForm = ({ onLogin }: LoginFormProps) => {
         // Buscar dados do usuário na tabela usuarios
         const { data: userData, error: userError } = await supabase
           .from('usuarios')
-          .select('nome')
+          .select('nome, tipo_usuario')
           .eq('email', email)
           .single();
 
@@ -79,7 +80,7 @@ const LoginForm = ({ onLogin }: LoginFormProps) => {
           return;
         }
 
-        onLogin(email, userData.nome);
+        onLogin(email, userData.nome, userData.tipo_usuario);
       } else {
         // Cadastro com redirecionamento correto
         const redirectUrl = `${window.location.origin}/`;
@@ -106,7 +107,8 @@ const LoginForm = ({ onLogin }: LoginFormProps) => {
               email,
               acertos: 0,
               erros: 0,
-              questoes_resolvidas: 0
+              questoes_resolvidas: 0,
+              tipo_usuario: tipoUsuario
             }
           ]);
 
@@ -194,19 +196,52 @@ const LoginForm = ({ onLogin }: LoginFormProps) => {
         <CardContent>
           <form onSubmit={handleSubmit} className="space-y-4">
             {!isLogin && (
-              <div className="space-y-2">
-                <Label htmlFor="nome" className="text-sm font-medium text-gray-700">
-                  Nome
-                </Label>
-                <Input
-                  id="nome"
-                  type="text"
-                  placeholder="Seu nome completo"
-                  value={nome}
-                  onChange={(e) => setNome(e.target.value)}
-                  className="w-full"
-                />
-              </div>
+              <>
+                <div className="space-y-2">
+                  <Label htmlFor="nome" className="text-sm font-medium text-gray-700">
+                    Nome
+                  </Label>
+                  <Input
+                    id="nome"
+                    type="text"
+                    placeholder="Seu nome completo"
+                    value={nome}
+                    onChange={(e) => setNome(e.target.value)}
+                    className="w-full"
+                  />
+                </div>
+
+                <div className="space-y-2">
+                  <Label htmlFor="tipoUsuario" className="text-sm font-medium text-gray-700">
+                    Tipo de Usuário
+                  </Label>
+                  <div className="flex space-x-4">
+                    <label className="flex items-center space-x-2 cursor-pointer">
+                      <input
+                        type="radio"
+                        name="tipoUsuario"
+                        value="aluno"
+                        checked={tipoUsuario === 'aluno'}
+                        onChange={() => setTipoUsuario('aluno')}
+                        className="h-4 w-4 text-blue-600"
+                      />
+                      <span className="text-gray-700">Aluno</span>
+                    </label>
+                    
+                    <label className="flex items-center space-x-2 cursor-pointer">
+                      <input
+                        type="radio"
+                        name="tipoUsuario"
+                        value="professor"
+                        checked={tipoUsuario === 'professor'}
+                        onChange={() => setTipoUsuario('professor')}
+                        className="h-4 w-4 text-blue-600"
+                      />
+                      <span className="text-gray-700">Professor</span>
+                    </label>
+                  </div>
+                </div>
+              </>
             )}
             
             <div className="space-y-2">

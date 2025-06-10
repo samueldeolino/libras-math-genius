@@ -1,19 +1,23 @@
+
 import { useState } from "react";
 import { Button } from "@/components/ui/button";
-import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
-import { Progress } from "@/components/ui/progress";
+import { Card, CardContent } from "@/components/ui/card";
 import { Question } from "../pages/Index";
 import UserHeader from "./UserHeader";
+import { supabase } from "@/integrations/supabase/client";
+import { toast } from "sonner";
 
 interface QuestionScreenProps {
   question: Question;
   questionNumber: number;
   totalQuestions: number;
-  onAnswer: (answer: number) => void;
+  onAnswer: (selectedAnswer: number) => void;
   userEmail: string;
   userName: string;
   correctAnswers: number;
   onLogout: () => void;
+  userType?: 'aluno' | 'professor';
+  onTeacherMode?: () => void;
 }
 
 const QuestionScreen = ({
@@ -24,239 +28,161 @@ const QuestionScreen = ({
   userEmail,
   userName,
   correctAnswers,
-  onLogout
+  onLogout,
+  userType,
+  onTeacherMode
 }: QuestionScreenProps) => {
-  const [selectedAnswer, setSelectedAnswer] = useState<number | null>(null);
-  const [showFeedback, setShowFeedback] = useState(false);
+  const [selectedOption, setSelectedOption] = useState<number | null>(null);
+  const [isSubmitting, setIsSubmitting] = useState(false);
 
-  const getOperationSymbol = (type: string) => {
-    switch (type) {
-      case 'soma': return '+';
-      case 'subtracao': return '-';
-      case 'multiplicacao': return '×';
-      case 'divisao': return '÷';
-      default: return '+';
+  const handleOptionClick = (option: number) => {
+    setSelectedOption(option);
+  };
+
+  const handleSubmit = async () => {
+    if (selectedOption === null) return;
+
+    setIsSubmitting(true);
+
+    try {
+      // Salvar a resposta no banco de dados
+      const isCorrect = selectedOption === question.result;
+
+      // Atualizar estatísticas do usuário
+      const { error } = await supabase
+        .from('usuarios')
+        .update({
+          acertos: isCorrect ? supabase.rpc('increment', { x: 1 }) : undefined,
+          erros: !isCorrect ? supabase.rpc('increment', { x: 1 }) : undefined,
+          questoes_resolvidas: supabase.rpc('increment', { x: 1 })
+        })
+        .eq('email', userEmail);
+
+      if (error) {
+        console.error('Erro ao salvar estatísticas:', error);
+        toast.error('Erro ao salvar estatísticas');
+      }
+    } catch (err) {
+      console.error('Erro:', err);
+    } finally {
+      onAnswer(selectedOption);
+      setSelectedOption(null);
+      setIsSubmitting(false);
     }
   };
 
-  const getOperationName = (type: string) => {
-    switch (type) {
-      case 'soma': return 'Soma';
-      case 'subtracao': return 'Subtração';
-      case 'multiplicacao': return 'Multiplicação';
-      case 'divisao': return 'Divisão';
-      default: return 'Operação';
-    }
-  };
-
-  const getOperationColor = (type: string) => {
-    switch (type) {
-      case 'soma': return 'from-green-400 to-green-600';
-      case 'subtracao': return 'from-red-400 to-red-600';
-      case 'multiplicacao': return 'from-blue-400 to-blue-600';
-      case 'divisao': return 'from-purple-400 to-purple-600';
-      default: return 'from-gray-400 to-gray-600';
-    }
-  };
-
-  const handleAnswerClick = (answer: number) => {
-    setSelectedAnswer(answer);
-    setShowFeedback(true);
-    
-    setTimeout(() => {
-      onAnswer(answer);
-      setSelectedAnswer(null);
-      setShowFeedback(false);
-    }, 1500);
-  };
-
-  const progress = (questionNumber / totalQuestions) * 100;
-
-  // Determinar o tipo de legenda baseado no número da questão
-  const getLegendType = () => {
-    if (questionNumber <= 4) return 'with-numbers'; // LIBRAS com números embaixo
-    if (questionNumber <= 7) return 'without-numbers'; // apenas LIBRAS sem números
-    return 'none'; // sem legenda
-  };
-
-  // Calcular probabilidade de mostrar LIBRAS baseado nos acertos
-  const getLibrasProbability = () => {
-    const baseProb = 0.3;
-    const maxProb = 0.8;
-    const progressFactor = correctAnswers / (questionNumber - 1 || 1);
-    return Math.min(maxProb, baseProb + (progressFactor * 0.5));
-  };
-
-  const shouldShowAsLibras = (index: number) => {
-    const probability = getLibrasProbability();
-    return (index * 0.123456 + correctAnswers * 0.789) % 1 < probability;
-  };
-
-  // Criar legenda com base no tipo
-  const createLegend = () => {
-    const legendType = getLegendType();
-    if (legendType === 'none') return null;
-
-    // Para ambos os tipos de legenda, mostrar números de 1 a 19
-    const numbersToShow = Array.from({ length: 19 }, (_, i) => i + 1);
-
-    return (
-      <div className="bg-blue-50 rounded-xl p-6 mb-6">
-        <h3 className="text-lg font-semibold text-blue-800 mb-4 text-center">
-          📚 Legenda: Sinais LIBRAS (1-19)
-        </h3>
-        <div className="grid gap-4 grid-cols-4 md:grid-cols-7">
-          {numbersToShow.map((num) => (
-            <div key={num} className="text-center bg-white rounded-lg p-3 shadow-sm">
-              <div className="text-3xl mb-2">
-                {question.librasNumbers[num] || num.toString()}
-              </div>
-              {legendType === 'with-numbers' && (
-                <div className="text-sm text-gray-500">
-                  {num}
-                </div>
-              )}
-            </div>
-          ))}
-        </div>
-        <div className="mt-4 text-center text-sm text-blue-600">
-          💡 Use os sinais LIBRAS acima para resolver a operação
-        </div>
-      </div>
-    );
-  };
+  // Determinar quais números mostrar na legenda de LIBRAS
+  const showLibrasLegend = questionNumber <= 7;
+  const showNumbersWithLegend = questionNumber <= 4;
+  
+  // Determinar quais números incluir na legenda (1-19)
+  const legendNumbers = Array.from({ length: 19 }, (_, i) => i + 1);
 
   return (
     <div className="min-h-screen bg-gradient-to-br from-blue-50 via-purple-50 to-pink-50 p-4">
       <UserHeader 
-        userName={userName}
-        questionNumber={questionNumber}
-        totalQuestions={totalQuestions}
+        userName={userName} 
+        questionNumber={questionNumber} 
+        totalQuestions={totalQuestions} 
         onLogout={onLogout}
+        isProfessor={userType === 'professor'}
+        onTeacherMode={onTeacherMode}
+        isTeacherMode={false}
       />
 
-      {/* Progress Bar */}
-      <div className="max-w-4xl mx-auto mb-8">
-        <div className="bg-white/80 backdrop-blur-sm rounded-lg p-4 shadow-lg">
-          <div className="flex justify-between items-center mb-2">
-            <span className="text-sm font-medium text-gray-600">Progresso</span>
-            <span className="text-sm font-medium text-gray-600">{Math.round(progress)}%</span>
+      <div className="max-w-4xl mx-auto space-y-6">
+        {/* Progresso */}
+        <div className="flex items-center justify-between mb-6">
+          <div className="px-4 py-2 bg-white rounded-lg shadow-sm border border-gray-100">
+            <span className="font-medium text-green-600">{correctAnswers}</span>
+            <span className="text-gray-500"> respostas corretas</span>
           </div>
-          <Progress value={progress} className="h-3" />
         </div>
-      </div>
 
-      {/* Question Card */}
-      <div className="max-w-4xl mx-auto">
-        <Card className="shadow-2xl border-0 bg-white/90 backdrop-blur-sm">
-          <CardHeader className="text-center">
-            <div className={`inline-block px-4 py-2 rounded-full bg-gradient-to-r ${getOperationColor(question.operationType)} text-white font-medium mb-4`}>
-              {getOperationName(question.operationType)}
-            </div>
-            <CardTitle className="text-2xl text-gray-800 mb-6">
-              Resolva a operação matemática
-            </CardTitle>
-          </CardHeader>
-
-          <CardContent className="space-y-8">
-            {/* Legenda */}
-            {createLegend()}
-
-            {/* Operação "armada" com LIBRAS misturado */}
-            <div className="bg-gradient-to-r from-gray-50 to-gray-100 rounded-xl p-8">
-              <div className="text-center space-y-6">
-                <div className="text-4xl font-mono font-bold text-gray-800">
-                  <div className="flex items-center justify-center gap-4 mb-4">
-                    <div className="text-center">
-                      <div className="text-6xl mb-2">
-                        {shouldShowAsLibras(0) ? question.librasSigns.num1 : question.num1}
-                      </div>
-                    </div>
-                    <div className="text-5xl text-purple-600 font-bold">
-                      {getOperationSymbol(question.operationType)}
-                    </div>
-                    <div className="text-center">
-                      <div className="text-6xl mb-2">
-                        {shouldShowAsLibras(1) ? question.librasSigns.num2 : question.num2}
-                      </div>
-                    </div>
-                    <div className="text-5xl text-purple-600 font-bold">=</div>
-                    <div className="text-5xl text-purple-600 font-bold">?</div>
+        {/* Questão */}
+        <Card className="bg-white/90 backdrop-blur-sm border-0 shadow-xl">
+          <CardContent className="p-8">
+            <div className="space-y-8">
+              {/* Operação em LIBRAS */}
+              <div className="text-center space-y-4">
+                <h2 className="text-xl font-bold text-gray-700">
+                  Qual é o resultado da operação?
+                </h2>
+                
+                <div className="flex items-center justify-center space-x-6 text-5xl py-4">
+                  <div className="flex flex-col items-center">
+                    <span className="mb-2">{question.librasSigns.num1}</span>
+                    <span className="text-lg text-gray-600">{question.num1}</span>
                   </div>
-                </div>
-                <div className="text-lg text-gray-600">
-                  {getLegendType() !== 'none' && (
-                    <div className="mb-2 text-blue-600 font-medium">
-                      💡 Use a legenda acima para identificar os sinais LIBRAS
-                    </div>
-                  )}
-                  {correctAnswers > 3 && (
-                    <div className="mb-2 text-green-600 font-medium">
-                      🎉 Nível {Math.floor(correctAnswers / 3)}: Mais sinais LIBRAS aparecem!
-                    </div>
-                  )}
-                  Resolva a operação acima
-                </div>
-              </div>
-            </div>
 
-            {/* Opções de resposta misturando LIBRAS e números */}
-            <div className="space-y-4">
-              <h3 className="text-xl font-semibold text-center text-gray-800 mb-6">
-                Escolha a resposta correta:
-              </h3>
-              <div className="grid grid-cols-2 gap-4">
-                {question.options.map((option, index) => {
-                  const showAsLibras = shouldShowAsLibras(index + 2);
-                  const librasSign = question.librasNumbers[option] || option.toString();
+                  <span className="text-3xl text-purple-600 font-bold">
+                    {question.operationType === 'soma' && '+'}
+                    {question.operationType === 'subtracao' && '-'}
+                    {question.operationType === 'multiplicacao' && '×'}
+                    {question.operationType === 'divisao' && '÷'}
+                  </span>
+
+                  <div className="flex flex-col items-center">
+                    <span className="mb-2">{question.librasSigns.num2}</span>
+                    <span className="text-lg text-gray-600">{question.num2}</span>
+                  </div>
+
+                  <span className="text-3xl text-purple-600 font-bold">=</span>
                   
-                  return (
-                    <Button
-                      key={index}
-                      onClick={() => handleAnswerClick(option)}
-                      disabled={showFeedback}
-                      className={`h-20 text-xl font-semibold transition-all duration-200 ${
-                        showFeedback
-                          ? selectedAnswer === option
-                            ? option === question.result
-                              ? 'bg-green-500 hover:bg-green-500 text-white'
-                              : 'bg-red-500 hover:bg-red-500 text-white'
-                            : option === question.result
-                            ? 'bg-green-500 hover:bg-green-500 text-white'
-                            : 'bg-gray-300 hover:bg-gray-300 text-gray-500'
-                          : selectedAnswer === option
-                          ? 'bg-purple-600 hover:bg-purple-700 text-white'
-                          : 'bg-white hover:bg-purple-50 text-purple-600 border-2 border-purple-200 hover:border-purple-300'
-                      }`}
-                      variant={showFeedback ? "default" : selectedAnswer === option ? "default" : "outline"}
-                    >
-                      <div className="flex items-center justify-center">
-                        <div className="text-4xl">
-                          {showAsLibras ? librasSign : option}
-                        </div>
-                      </div>
-                    </Button>
-                  );
-                })}
+                  <span className="text-3xl bg-blue-100 text-blue-600 w-16 h-16 flex items-center justify-center rounded-full">?</span>
+                </div>
+              </div>
+
+              {/* Opções de resposta */}
+              <div className="grid grid-cols-2 sm:grid-cols-4 gap-4">
+                {question.options.map((option) => (
+                  <Button
+                    key={option}
+                    onClick={() => handleOptionClick(option)}
+                    variant={selectedOption === option ? "default" : "outline"}
+                    className={`h-16 text-xl transition-all ${
+                      selectedOption === option
+                        ? "bg-blue-600 hover:bg-blue-700 text-white"
+                        : "bg-white hover:bg-gray-50 text-gray-800"
+                    }`}
+                  >
+                    {option}
+                  </Button>
+                ))}
+              </div>
+
+              {/* Botão de enviar */}
+              <div className="pt-4 text-center">
+                <Button
+                  onClick={handleSubmit}
+                  disabled={selectedOption === null || isSubmitting}
+                  className="bg-gradient-to-r from-blue-500 to-purple-600 hover:from-blue-600 hover:to-purple-700 text-white px-8 py-6 text-lg w-full sm:w-auto"
+                >
+                  {isSubmitting ? "Enviando..." : "Confirmar Resposta"}
+                </Button>
               </div>
             </div>
-
-            {/* Feedback */}
-            {showFeedback && (
-              <div className="text-center p-4">
-                {selectedAnswer === question.result ? (
-                  <div className="text-green-600 text-lg font-semibold">
-                    🎉 Correto! Muito bem!
-                  </div>
-                ) : (
-                  <div className="text-red-600 text-lg font-semibold">
-                    ❌ Resposta incorreta. A resposta correta é {question.result}.
-                  </div>
-                )}
-              </div>
-            )}
           </CardContent>
         </Card>
+
+        {/* Legenda de LIBRAS */}
+        {showLibrasLegend && (
+          <Card className="bg-white/90 backdrop-blur-sm border-0 shadow-lg">
+            <CardContent className="p-6">
+              <h3 className="text-base font-medium text-gray-700 mb-3">
+                Legenda: Sinais de LIBRAS
+              </h3>
+              <div className="grid grid-cols-5 sm:grid-cols-10 gap-2">
+                {legendNumbers.map((num) => (
+                  <div key={num} className="flex flex-col items-center">
+                    <div className="text-2xl mb-1">{question.librasNumbers[num]}</div>
+                    {showNumbersWithLegend && <div className="text-sm text-gray-700">{num}</div>}
+                  </div>
+                ))}
+              </div>
+            </CardContent>
+          </Card>
+        )}
       </div>
     </div>
   );
