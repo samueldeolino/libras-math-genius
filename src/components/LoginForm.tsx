@@ -1,4 +1,3 @@
-
 import { useState } from "react";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
@@ -82,6 +81,18 @@ const LoginForm = ({ onLogin }: LoginFormProps) => {
 
         onLogin(email, userData.nome, userData.tipo_usuario);
       } else {
+        // Primeiro, verificar se o email já existe na tabela usuarios
+        const { data: existingUser } = await supabase
+          .from('usuarios')
+          .select('email')
+          .eq('email', email)
+          .single();
+
+        if (existingUser) {
+          setError("Este email já está cadastrado. Tente fazer login ou use outro email.");
+          return;
+        }
+
         // Cadastro com redirecionamento correto
         const redirectUrl = `${window.location.origin}/`;
         
@@ -94,34 +105,42 @@ const LoginForm = ({ onLogin }: LoginFormProps) => {
         });
 
         if (error) {
+          if (error.message.includes("User already registered")) {
+            setError("Este email já está cadastrado. Tente fazer login.");
+            return;
+          }
           setError("Erro ao criar conta: " + error.message);
           return;
         }
 
-        // Criar registro na tabela usuarios
-        const { error: insertError } = await supabase
-          .from('usuarios')
-          .insert([
-            {
-              nome,
-              email,
-              acertos: 0,
-              erros: 0,
-              questoes_resolvidas: 0,
-              tipo_usuario: tipoUsuario
-            }
-          ]);
+        // Só criar registro na tabela usuarios se o cadastro no Auth foi bem-sucedido
+        if (data.user) {
+          const { error: insertError } = await supabase
+            .from('usuarios')
+            .insert([
+              {
+                nome,
+                email,
+                acertos: 0,
+                erros: 0,
+                questoes_resolvidas: 0,
+                tipo_usuario: tipoUsuario
+              }
+            ]);
 
-        if (insertError) {
-          setError("Erro ao salvar dados do usuário");
-          return;
+          if (insertError) {
+            console.error("Erro ao salvar dados do usuário:", insertError);
+            setError("Erro ao salvar dados do usuário. Tente fazer login se a conta foi criada.");
+            return;
+          }
+
+          // Mostrar mensagem de confirmação de email
+          setShowEmailConfirmation(true);
+          setError("");
         }
-
-        // Mostrar mensagem de confirmação de email
-        setShowEmailConfirmation(true);
-        setError("");
       }
     } catch (err) {
+      console.error("Erro durante autenticação:", err);
       setError("Erro interno. Tente novamente.");
     }
   };
