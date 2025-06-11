@@ -1,5 +1,4 @@
-
-import { useState } from "react";
+import React, { useState } from "react";
 import { Button } from "@/components/ui/button";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { Input } from "@/components/ui/input";
@@ -39,12 +38,18 @@ const TeacherScreen = ({ onBack, onQuestionsGenerated, userName, onLogout }: Tea
   const [isGenerating, setIsGenerating] = useState(false);
 
   // Sinais de LIBRAS para números
-  const librasNumbers: { [key: number]: string } = {
-    1: "👆", 2: "✌️", 3: "👌", 4: "🤟", 5: "🖐️",
-    6: "🤙", 7: "👇", 8: "🤘", 9: "👊", 10: "✊",
-    11: "👆👆", 12: "👆✌️", 13: "👆👌", 14: "👆🤟", 15: "👆🖐️",
-    16: "👆🤙", 17: "👆👇", 18: "👆🤘", 19: "👆👊", 20: "✌️✊",
-    21: "✌️👆", 22: "✌️✌️", 23: "✌️👌", 24: "✌️🤟", 25: "✌️🖐️"
+  const imageClass = "h-[1.2em] w-[1.2em] inline-block align-middle";
+  const librasNumbers: { [key: number]: React.ReactNode } = {
+    0: <img src="/numero-0.jpg" alt="Número 0 em LIBRAS" className={imageClass} />,
+    1: <img src="/numero-1.jpg" alt="Número 1 em LIBRAS" className={imageClass} />,
+    2: <img src="/numero-2.jpg" alt="Número 2 em LIBRAS" className={imageClass} />,
+    3: <img src="/numero-3.jpg" alt="Número 3 em LIBRAS" className={imageClass} />,
+    4: <img src="/numero-4.jpg" alt="Número 4 em LIBRAS" className={imageClass} />,
+    5: <img src="/numero-5.jpg" alt="Número 5 em LIBRAS" className={imageClass} />,
+    6: <img src="/numero-6.jpg" alt="Número 6 em LIBRAS" className={imageClass} />,
+    7: <img src="/numero-7.jpg" alt="Número 7 em LIBRAS" className={imageClass} />,
+    8: <img src="/numero-8.jpg" alt="Número 8 em LIBRAS" className={imageClass} />,
+    9: <img src="/numero-9.jpg" alt="Número 9 em LIBRAS" className={imageClass} />,
   };
 
   const updateRange = (operation: keyof OperationRanges, field: 'min' | 'max', value: string) => {
@@ -66,7 +71,7 @@ const TeacherScreen = ({ onBack, onQuestionsGenerated, userName, onLogout }: Tea
     const options = [correctAnswer];
     while (options.length < 4) {
       const randomOption = correctAnswer + Math.floor(Math.random() * 10) - 5;
-      if (randomOption > 0 && !options.includes(randomOption)) {
+      if (randomOption >= 0 && !options.includes(randomOption)) {
         options.push(randomOption);
       }
     }

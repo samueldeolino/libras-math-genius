@@ -1,4 +1,3 @@
-
 import { useState } from "react";
 import { Button } from "@/components/ui/button";
 import { Card, CardContent } from "@/components/ui/card";
@@ -90,8 +89,8 @@ const QuestionScreen = ({
   const showLibrasLegend = questionNumber <= 7;
   const showNumbersWithLegend = questionNumber <= 4;
   
-  // Determinar quais números incluir na legenda (1-19)
-  const legendNumbers = Array.from({ length: 19 }, (_, i) => i + 1);
+  // Determinar quais números incluir na legenda (0-9)
+  const legendNumbers = Array.from({ length: 10 }, (_, i) => i);
 
   // Função para determinar se deve mostrar sinal de LIBRAS para uma alternativa
   const shouldShowLibrasForOption = (option: number, index: number): boolean => {
@@ -192,7 +191,10 @@ const QuestionScreen = ({
                     {shouldShowLibrasForOption(option, index) && question.librasNumbers[option] ? (
                       <div className="flex flex-col items-center">
                         <span className="text-2xl mb-1">{question.librasNumbers[option]}</span>
-                        <span className="text-sm">{option}</span>
+                        {/* AQUI ESTÁ A LÓGICA ALTERADA */}
+                        {questionNumber < 5 && (
+                          <span className="text-sm">{option}</span>
+                        )}
                       </div>
                     ) : (
                       <span>{option}</span>

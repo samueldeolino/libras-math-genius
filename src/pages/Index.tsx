@@ -1,5 +1,5 @@
-
 import { useState } from "react";
+import React from "react";
 import LoginForm from "../components/LoginForm";
 import QuestionScreen from "../components/QuestionScreen";
 import ResultsScreen from "../components/ResultsScreen";
@@ -13,8 +13,8 @@ export interface Question {
   num2: number;
   result: number;
   options: number[];
-  librasSigns: { num1: string; num2: string };
-  librasNumbers: { [key: number]: string };
+  librasSigns: { num1: React.ReactNode; num2: React.ReactNode };
+  librasNumbers: { [key: number]: React.ReactNode };
 }
 
 const Index = () => {
@@ -27,13 +27,19 @@ const Index = () => {
   const [showResults, setShowResults] = useState(false);
   const [showTeacherScreen, setShowTeacherScreen] = useState(false);
 
-  // Sinais de LIBRAS para números (representação textual)
-  const librasNumbers: { [key: number]: string } = {
-    1: "👆", 2: "✌️", 3: "👌", 4: "🤟", 5: "🖐️",
-    6: "🤙", 7: "👇", 8: "🤘", 9: "👊", 10: "✊",
-    11: "👆👆", 12: "👆✌️", 13: "👆👌", 14: "👆🤟", 15: "👆🖐️",
-    16: "👆🤙", 17: "👆👇", 18: "👆🤘", 19: "👆👊", 20: "✌️✊",
-    21: "✌️👆", 22: "✌️✌️", 23: "✌️👌", 24: "✌️🤟", 25: "✌️🖐️"
+  // Sinais de LIBRAS para números (representação por imagem)
+  const imageClass = "h-[1.2em] w-[1.2em] inline-block align-middle";
+  const librasNumbers: { [key: number]: React.ReactNode } = {
+    0: <img src="/numero-0.jpg" alt="Número 0 em LIBRAS" className={imageClass} />,
+    1: <img src="/numero-1.jpg" alt="Número 1 em LIBRAS" className={imageClass} />,
+    2: <img src="/numero-2.jpg" alt="Número 2 em LIBRAS" className={imageClass} />,
+    3: <img src="/numero-3.jpg" alt="Número 3 em LIBRAS" className={imageClass} />,
+    4: <img src="/numero-4.jpg" alt="Número 4 em LIBRAS" className={imageClass} />,
+    5: <img src="/numero-5.jpg" alt="Número 5 em LIBRAS" className={imageClass} />,
+    6: <img src="/numero-6.jpg" alt="Número 6 em LIBRAS" className={imageClass} />,
+    7: <img src="/numero-7.jpg" alt="Número 7 em LIBRAS" className={imageClass} />,
+    8: <img src="/numero-8.jpg" alt="Número 8 em LIBRAS" className={imageClass} />,
+    9: <img src="/numero-9.jpg" alt="Número 9 em LIBRAS" className={imageClass} />,
   };
 
   // Gerar questões matemáticas
