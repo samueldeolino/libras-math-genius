@@ -1,6 +1,8 @@
+
 import { useState } from "react";
 import { Button } from "@/components/ui/button";
 import { Card, CardContent } from "@/components/ui/card";
+import { Progress } from "@/components/ui/progress";
 import { Question } from "../pages/Index";
 import UserHeader from "./UserHeader";
 import { supabase } from "@/integrations/supabase/client";
@@ -44,10 +46,8 @@ const QuestionScreen = ({
     setIsSubmitting(true);
 
     try {
-      // Salvar a resposta no banco de dados
       const isCorrect = selectedOption === question.result;
 
-      // Primeiro, buscar os valores atuais do usuário
       const { data: userData, error: fetchError } = await supabase
         .from('usuarios')
         .select('acertos, erros, questoes_resolvidas')
@@ -60,12 +60,10 @@ const QuestionScreen = ({
         return;
       }
 
-      // Calcular os novos valores
       const newAcertos = (userData.acertos || 0) + (isCorrect ? 1 : 0);
       const newErros = (userData.erros || 0) + (!isCorrect ? 1 : 0);
       const newQuestoesResolvidas = (userData.questoes_resolvidas || 0) + 1;
 
-      // Atualizar com os novos valores
       const { error: updateError } = await supabase
         .from('usuarios')
         .update({
@@ -95,6 +93,23 @@ const QuestionScreen = ({
   // Determinar quais números incluir na legenda (1-19)
   const legendNumbers = Array.from({ length: 19 }, (_, i) => i + 1);
 
+  // Função para determinar se deve mostrar sinal de LIBRAS para uma alternativa
+  const shouldShowLibrasForOption = (option: number, index: number): boolean => {
+    if (questionNumber <= 4) {
+      // Questões 1-4: 3 sinais de LIBRAS no total
+      return index < 3;
+    } else if (questionNumber <= 7) {
+      // Questões 5-7: 4 sinais de LIBRAS no total
+      return true; // todas as 4 alternativas
+    } else {
+      // Questões 8-12: 4 sinais de LIBRAS no total
+      return true; // todas as 4 alternativas
+    }
+  };
+
+  // Calcular progresso
+  const progress = (questionNumber / totalQuestions) * 100;
+
   return (
     <div className="min-h-screen bg-gradient-to-br from-blue-50 via-purple-50 to-pink-50 p-4">
       <UserHeader 
@@ -108,7 +123,20 @@ const QuestionScreen = ({
       />
 
       <div className="max-w-4xl mx-auto space-y-6">
-        {/* Progresso */}
+        {/* Barra de Progresso */}
+        <Card className="bg-white/90 backdrop-blur-sm border-0 shadow-lg">
+          <CardContent className="p-6">
+            <div className="space-y-2">
+              <div className="flex justify-between text-sm text-gray-600">
+                <span>Progresso do Quiz</span>
+                <span>{questionNumber} de {totalQuestions}</span>
+              </div>
+              <Progress value={progress} className="w-full" />
+            </div>
+          </CardContent>
+        </Card>
+
+        {/* Progresso de acertos */}
         <div className="flex items-center justify-between mb-6">
           <div className="px-4 py-2 bg-white rounded-lg shadow-sm border border-gray-100">
             <span className="font-medium text-green-600">{correctAnswers}</span>
@@ -150,18 +178,25 @@ const QuestionScreen = ({
 
               {/* Opções de resposta */}
               <div className="grid grid-cols-2 sm:grid-cols-4 gap-4">
-                {question.options.map((option) => (
+                {question.options.map((option, index) => (
                   <Button
                     key={option}
                     onClick={() => handleOptionClick(option)}
                     variant={selectedOption === option ? "default" : "outline"}
-                    className={`h-16 text-xl transition-all ${
+                    className={`h-20 text-xl transition-all flex flex-col items-center justify-center ${
                       selectedOption === option
                         ? "bg-blue-600 hover:bg-blue-700 text-white"
                         : "bg-white hover:bg-gray-50 text-gray-800"
                     }`}
                   >
-                    {option}
+                    {shouldShowLibrasForOption(option, index) && question.librasNumbers[option] ? (
+                      <div className="flex flex-col items-center">
+                        <span className="text-2xl mb-1">{question.librasNumbers[option]}</span>
+                        <span className="text-sm">{option}</span>
+                      </div>
+                    ) : (
+                      <span>{option}</span>
+                    )}
                   </Button>
                 ))}
               </div>
