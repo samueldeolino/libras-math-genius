@@ -1,7 +1,6 @@
-
 import { useEffect } from "react";
 import { Button } from "@/components/ui/button";
-import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
+import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card";
 import { Badge } from "@/components/ui/badge";
 import { Trophy, RotateCcw, CheckCircle, XCircle, Target } from "lucide-react";
 import { Question } from "../pages/Index";
@@ -29,7 +28,6 @@ const ResultsScreen = ({ results, userEmail, userName, onRestart, onLogout, ques
     // Salvar resultados no banco de dados
     const saveResults = async () => {
       try {
-        // Primeiro, verificar se o usuário já existe
         const { data: existingUser, error: fetchError } = await supabase
           .from('usuarios')
           .select('acertos, erros, questoes_resolvidas')
@@ -42,7 +40,6 @@ const ResultsScreen = ({ results, userEmail, userName, onRestart, onLogout, ques
         }
 
         if (existingUser) {
-          // Usuário existe, atualizar dados
           const { error: updateError } = await supabase
             .from('usuarios')
             .update({
@@ -59,7 +56,6 @@ const ResultsScreen = ({ results, userEmail, userName, onRestart, onLogout, ques
             console.log('Resultados atualizados com sucesso!');
           }
         } else {
-          // Usuário não existe, criar novo registro
           const { error: insertError } = await supabase
             .from('usuarios')
             .insert({
@@ -113,7 +109,6 @@ const ResultsScreen = ({ results, userEmail, userName, onRestart, onLogout, ques
     }
   };
 
-  // Filtrar apenas as questões que o usuário errou
   const wrongAnswers = questions.filter((question, index) => userAnswers[index] !== question.result);
 
   return (
@@ -124,6 +119,42 @@ const ResultsScreen = ({ results, userEmail, userName, onRestart, onLogout, ques
       />
 
       <div className="max-w-4xl mx-auto space-y-6">
+        
+        {/* Card de Feedback com QR Code */}
+        <Card className="shadow-lg border-0 bg-white/90 backdrop-blur-sm">
+          <CardHeader>
+            <CardTitle className="text-xl font-bold text-gray-800 text-center">
+              👋 Sua Opinião é Importante!
+            </CardTitle>
+            <CardDescription className="text-center text-gray-600">
+              Ajude-nos a melhorar! Por favor, responda nosso formulário de feedback.
+            </CardDescription>
+          </CardHeader>
+          <CardContent className="flex flex-col md:flex-row items-center justify-center gap-6">
+            <div className="flex-shrink-0">
+              <img
+                src="/qr-code-forms-libras-math.png"
+                alt="QR Code para formulário de feedback"
+                className="w-32 h-32 rounded-lg border p-1"
+              />
+            </div>
+            <div className="flex flex-col items-center md:items-start gap-4">
+              <p className="text-center md:text-left">
+                Aponte a câmera do seu celular para o QR Code ou clique no botão abaixo.
+              </p>
+              <Button asChild className="bg-green-600 hover:bg-green-700">
+                <a 
+                  href="https://forms.gle/9RG1mVcm3DGBtwr66"
+                  target="_blank"
+                  rel="noopener noreferrer"
+                >
+                  Acessar Formulário
+                </a>
+              </Button>
+            </div>
+          </CardContent>
+        </Card>
+
         {/* Resultado Principal */}
         <Card className="shadow-2xl border-0 bg-white/90 backdrop-blur-sm">
           <CardHeader className="text-center">
@@ -141,7 +172,6 @@ const ResultsScreen = ({ results, userEmail, userName, onRestart, onLogout, ques
           </CardHeader>
 
           <CardContent className="space-y-6">
-            {/* Estatísticas */}
             <div className="grid grid-cols-1 md:grid-cols-3 gap-4">
               <div className="text-center p-4 bg-green-50 rounded-lg">
                 <CheckCircle className="h-8 w-8 text-green-600 mx-auto mb-2" />
@@ -160,7 +190,6 @@ const ResultsScreen = ({ results, userEmail, userName, onRestart, onLogout, ques
               </div>
             </div>
 
-            {/* Botão de Reiniciar */}
             <div className="text-center">
               <Button
                 onClick={onRestart}
@@ -206,14 +235,12 @@ const ResultsScreen = ({ results, userEmail, userName, onRestart, onLogout, ques
                         </span>
                       </div>
                       
-                      {/* Operação */}
                       <div className="bg-white rounded-lg p-4 mb-3">
                         <div className="text-center text-2xl font-mono font-bold text-gray-800">
                           {question.num1} {getOperationSymbol(question.operationType)} {question.num2} = ?
                         </div>
                       </div>
                       
-                      {/* Respostas */}
                       <div className="flex items-center justify-between text-sm">
                         <span className="text-red-600 font-semibold">
                           ❌ Sua resposta: {userAnswer}
@@ -223,7 +250,6 @@ const ResultsScreen = ({ results, userEmail, userName, onRestart, onLogout, ques
                         </span>
                       </div>
                       
-                      {/* Explicação */}
                       <div className="mt-2 p-2 bg-blue-50 rounded text-sm text-blue-800">
                         💡 <strong>Explicação:</strong> {question.num1} {getOperationSymbol(question.operationType)} {question.num2} = {question.result}
                       </div>
