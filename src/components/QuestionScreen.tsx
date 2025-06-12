@@ -6,6 +6,7 @@ import { Question } from "../pages/Index";
 import UserHeader from "./UserHeader";
 import { supabase } from "@/integrations/supabase/client";
 import { toast } from "sonner";
+import { Loader2, CheckCircle, XCircle } from "lucide-react";
 
 interface QuestionScreenProps {
   question: Question;
@@ -36,17 +37,12 @@ const QuestionScreen = ({
   const [isSubmitting, setIsSubmitting] = useState(false);
 
   const handleOptionClick = (option: number) => {
+    if (isSubmitting) return; 
     setSelectedOption(option);
   };
 
-  const handleSubmit = async () => {
-    if (selectedOption === null) return;
-
-    setIsSubmitting(true);
-
+  const updateUserStats = async (isCorrect: boolean) => {
     try {
-      const isCorrect = selectedOption === question.result;
-
       const { data: userData, error: fetchError } = await supabase
         .from('usuarios')
         .select('acertos, erros, questoes_resolvidas')
@@ -77,44 +73,71 @@ const QuestionScreen = ({
         toast.error('Erro ao salvar estatísticas');
       }
     } catch (err) {
-      console.error('Erro:', err);
-    } finally {
+      console.error('Erro ao salvar progresso:', err);
+    }
+  }
+
+  const handleSubmit = () => {
+    if (selectedOption === null || isSubmitting) return;
+
+    setIsSubmitting(true);
+    const isCorrect = selectedOption === question.result;
+
+    updateUserStats(isCorrect);
+
+    // **AQUI ESTÁ A ALTERAÇÃO FINAL**
+    // Adicionadas classes para garantir as cores verde e vermelha.
+    if (isCorrect) {
+      toast.success("Resposta Correta!", { 
+        icon: <CheckCircle className="h-5 w-5" />,
+        duration: 1500,
+        position: 'top-center',
+        classNames: {
+          toast: 'bg-green-100 dark:bg-green-600 border-green-400',
+          title: 'text-green-600 dark:text-green-100',
+        },
+      });
+    } else {
+      toast.error("Resposta Incorreta!", {
+        description: `A resposta correta é: ${question.result}`,
+        icon: <XCircle className="h-5 w-5" />,
+        duration: 1500,
+        position: 'top-center',
+        classNames: {
+            toast: 'bg-red-100 dark:bg-red-600 border-red-400',
+            title: 'text-red-600 dark:text-red-100',
+            description: 'text-red-600 dark:text-red-200',
+          },
+      });
+    }
+
+    setTimeout(() => {
       onAnswer(selectedOption);
       setSelectedOption(null);
       setIsSubmitting(false);
-    }
+    }, 1500);
   };
 
-  // Determinar quais números mostrar na legenda de LIBRAS
   const showLibrasLegend = questionNumber <= 7;
   const showNumbersWithLegend = questionNumber <= 4;
-  
-  // Determinar quais números incluir na legenda (0-9)
   const legendNumbers = Array.from({ length: 10 }, (_, i) => i);
 
-  // Função para determinar se deve mostrar sinal de LIBRAS para uma alternativa
   const shouldShowLibrasForOption = (option: number, index: number): boolean => {
     if (questionNumber <= 4) {
-      // Questões 1-4: 3 sinais de LIBRAS no total
       return index < 3;
     } else if (questionNumber <= 7) {
-      // Questões 5-7: 4 sinais de LIBRAS no total
-      return true; // todas as 4 alternativas
+      return true;
     } else {
-      // Questões 8-12: 4 sinais de LIBRAS no total
-      return true; // todas as 4 alternativas
+      return true;
     }
   };
 
-  // Calcular progresso
   const progress = (questionNumber / totalQuestions) * 100;
 
   return (
     <div className="min-h-screen bg-gradient-to-br from-blue-50 via-purple-50 to-pink-50 p-4">
       <UserHeader 
-        userName={userName} 
-        questionNumber={questionNumber} 
-        totalQuestions={totalQuestions} 
+        userName={userName}
         onLogout={onLogout}
         isProfessor={userType === 'professor'}
         onTeacherMode={onTeacherMode}
@@ -122,7 +145,6 @@ const QuestionScreen = ({
       />
 
       <div className="max-w-4xl mx-auto space-y-6">
-        {/* Barra de Progresso */}
         <Card className="bg-white/90 backdrop-blur-sm border-0 shadow-lg">
           <CardContent className="p-6">
             <div className="space-y-2">
@@ -135,7 +157,6 @@ const QuestionScreen = ({
           </CardContent>
         </Card>
 
-        {/* Progresso de acertos */}
         <div className="flex items-center justify-between mb-6">
           <div className="px-4 py-2 bg-white rounded-lg shadow-sm border border-gray-100">
             <span className="font-medium text-green-600">{correctAnswers}</span>
@@ -143,39 +164,31 @@ const QuestionScreen = ({
           </div>
         </div>
 
-        {/* Questão */}
         <Card className="bg-white/90 backdrop-blur-sm border-0 shadow-xl">
           <CardContent className="p-8">
             <div className="space-y-8">
-              {/* Operação em LIBRAS */}
               <div className="text-center space-y-4">
                 <h2 className="text-xl font-bold text-gray-700">
                   Qual é o resultado da operação?
                 </h2>
-                
                 <div className="flex items-center justify-center space-x-6 text-5xl py-4">
                   <div className="flex flex-col items-center">
                     <span className="mb-2">{question.librasSigns.num1}</span>
                   </div>
-
                   <span className="text-3xl text-purple-600 font-bold">
                     {question.operationType === 'soma' && '+'}
                     {question.operationType === 'subtracao' && '-'}
                     {question.operationType === 'multiplicacao' && '×'}
                     {question.operationType === 'divisao' && '÷'}
                   </span>
-
                   <div className="flex flex-col items-center">
                     <span className="mb-2">{question.librasSigns.num2}</span>
                   </div>
-
                   <span className="text-3xl text-purple-600 font-bold">=</span>
-                  
                   <span className="text-3xl bg-blue-100 text-blue-600 w-16 h-16 flex items-center justify-center rounded-full">?</span>
                 </div>
               </div>
 
-              {/* Opções de resposta */}
               <div className="grid grid-cols-2 sm:grid-cols-4 gap-4">
                 {question.options.map((option, index) => (
                   <Button
@@ -191,7 +204,6 @@ const QuestionScreen = ({
                     {shouldShowLibrasForOption(option, index) && question.librasNumbers[option] ? (
                       <div className="flex flex-col items-center">
                         <span className="text-2xl mb-1">{question.librasNumbers[option]}</span>
-                        {/* AQUI ESTÁ A LÓGICA ALTERADA */}
                         {questionNumber < 5 && (
                           <span className="text-sm">{option}</span>
                         )}
@@ -203,21 +215,26 @@ const QuestionScreen = ({
                 ))}
               </div>
 
-              {/* Botão de enviar */}
               <div className="pt-4 text-center">
                 <Button
                   onClick={handleSubmit}
                   disabled={selectedOption === null || isSubmitting}
                   className="bg-gradient-to-r from-blue-500 to-purple-600 hover:from-blue-600 hover:to-purple-700 text-white px-8 py-6 text-lg w-full sm:w-auto"
                 >
-                  {isSubmitting ? "Enviando..." : "Confirmar Resposta"}
+                  {isSubmitting ? (
+                    <>
+                      <Loader2 className="mr-2 h-4 w-4 animate-spin" />
+                      Processando...
+                    </>
+                  ) : (
+                    "Confirmar Resposta"
+                  )}
                 </Button>
               </div>
             </div>
           </CardContent>
         </Card>
 
-        {/* Legenda de LIBRAS */}
         {showLibrasLegend && (
           <Card className="bg-white/90 backdrop-blur-sm border-0 shadow-lg">
             <CardContent className="p-6">
@@ -227,7 +244,7 @@ const QuestionScreen = ({
               <div className="grid grid-cols-5 sm:grid-cols-10 gap-2">
                 {legendNumbers.map((num) => (
                   <div key={num} className="flex flex-col items-center">
-                    <div className="text-2xl mb-1">{question.librasNumbers[num]}</div>
+                    <div className="text-2xl mb-1">{question.librasNumbers[num] || ''}</div>
                     {showNumbersWithLegend && <div className="text-sm text-gray-700">{num}</div>}
                   </div>
                 ))}

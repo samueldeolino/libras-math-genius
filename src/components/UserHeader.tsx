@@ -1,13 +1,10 @@
-
 import { Button } from "@/components/ui/button";
 import { Card } from "@/components/ui/card";
-import { User, Calculator, LogOut, BookOpen } from "lucide-react";
+import { User, LogOut, BookOpen } from "lucide-react";
 import { supabase } from "@/integrations/supabase/client";
 
 interface UserHeaderProps {
   userName: string;
-  questionNumber?: number;
-  totalQuestions?: number;
   onLogout: () => void;
   isProfessor?: boolean;
   onTeacherMode?: () => void;
@@ -16,8 +13,6 @@ interface UserHeaderProps {
 
 const UserHeader = ({ 
   userName, 
-  questionNumber, 
-  totalQuestions, 
   onLogout,
   isProfessor,
   onTeacherMode,
@@ -43,15 +38,6 @@ const UserHeader = ({
           </div>
           
           <div className="flex items-center gap-4">
-            {questionNumber && totalQuestions && (
-              <div className="flex items-center gap-3">
-                <Calculator className="h-5 w-5 text-purple-600" />
-                <span className="text-sm font-medium text-gray-700">
-                  Questão {questionNumber} de {totalQuestions}
-                </span>
-              </div>
-            )}
-            
             {isProfessor && onTeacherMode && (
               <Button
                 onClick={onTeacherMode}
