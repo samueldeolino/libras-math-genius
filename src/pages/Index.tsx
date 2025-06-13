@@ -1,4 +1,4 @@
-import { useState } from "react";
+import { useState, useEffect } from "react";
 import React from "react";
 import LoginForm from "../components/LoginForm";
 import QuestionScreen from "../components/QuestionScreen";
@@ -26,8 +26,8 @@ const Index = () => {
   const [userAnswers, setUserAnswers] = useState<number[]>([]);
   const [showResults, setShowResults] = useState(false);
   const [showTeacherScreen, setShowTeacherScreen] = useState(false);
+  const [questions, setQuestions] = useState<Question[]>([]);
 
-  // Sinais de LIBRAS para números (representação por imagem)
   const imageClass = "h-[1.2em] w-[1.2em] inline-block align-middle";
   const librasNumbers: { [key: number]: React.ReactNode } = {
     0: <img src="/numero-0.jpg" alt="Número 0 em LIBRAS" className={imageClass} />,
@@ -42,135 +42,118 @@ const Index = () => {
     9: <img src="/numero-9.jpg" alt="Número 9 em LIBRAS" className={imageClass} />,
   };
 
-  // Gerar questões matemáticas
-  const generateQuestions = (): Question[] => {
-    const questions: Question[] = [];
-    let id = 1;
+  const getRandomInt = (min: number, max: number) => Math.floor(Math.random() * (max - min + 1)) + min;
+  const isLibras = (n: number) => n >= 0 && n <= 9;
+  const shuffleArray = (array: any[]) => array.sort(() => Math.random() - 0.5);
 
-    // 3 questões de soma
-    const somaQuestions = [
-      { num1: 5, num2: 3, result: 8 },
-      { num1: 7, num2: 4, result: 11 },
-      { num1: 6, num2: 9, result: 15 }
-    ];
+  const generateOptions = (correctAnswer: number, neededLibrasOptions: number): number[] => {
+    const incorrectOptions = new Set<number>();
+    const librasPool = Array.from({ length: 10 }, (_, i) => i).filter(n => n !== correctAnswer);
+    const nonLibrasPool = Array.from({ length: 41 }, (_, i) => i + 10).filter(n => n !== correctAnswer);
 
-    // 3 questões de subtração
-    const subtracaoQuestions = [
-      { num1: 10, num2: 4, result: 6 },
-      { num1: 15, num2: 7, result: 8 },
-      { num1: 12, num2: 5, result: 7 }
-    ];
+    shuffleArray(librasPool);
+    shuffleArray(nonLibrasPool);
 
-    // 3 questões de multiplicação
-    const multiplicacaoQuestions = [
-      { num1: 3, num2: 4, result: 12 },
-      { num1: 5, num2: 3, result: 15 },
-      { num1: 2, num2: 8, result: 16 }
-    ];
-
-    // 3 questões de divisão
-    const divisaoQuestions = [
-      { num1: 20, num2: 4, result: 5 },
-      { num1: 18, num2: 3, result: 6 },
-      { num1: 24, num2: 4, result: 6 }
-    ];
-
-    // Criar questões de soma
-    somaQuestions.forEach((q) => {
-      questions.push({
-        id: id++,
-        operation: `${q.num1} + ${q.num2} = ?`,
-        operationType: 'soma',
-        num1: q.num1,
-        num2: q.num2,
-        result: q.result,
-        options: generateOptions(q.result),
-        librasSigns: {
-          num1: librasNumbers[q.num1] || q.num1.toString(),
-          num2: librasNumbers[q.num2] || q.num2.toString()
-        },
-        librasNumbers
-      });
-    });
-
-    // Criar questões de subtração
-    subtracaoQuestions.forEach((q) => {
-      questions.push({
-        id: id++,
-        operation: `${q.num1} - ${q.num2} = ?`,
-        operationType: 'subtracao',
-        num1: q.num1,
-        num2: q.num2,
-        result: q.result,
-        options: generateOptions(q.result),
-        librasSigns: {
-          num1: librasNumbers[q.num1] || q.num1.toString(),
-          num2: librasNumbers[q.num2] || q.num2.toString()
-        },
-        librasNumbers
-      });
-    });
-
-    // Criar questões de multiplicação
-    multiplicacaoQuestions.forEach((q) => {
-      questions.push({
-        id: id++,
-        operation: `${q.num1} × ${q.num2} = ?`,
-        operationType: 'multiplicacao',
-        num1: q.num1,
-        num2: q.num2,
-        result: q.result,
-        options: generateOptions(q.result),
-        librasSigns: {
-          num1: librasNumbers[q.num1] || q.num1.toString(),
-          num2: librasNumbers[q.num2] || q.num2.toString()
-        },
-        librasNumbers
-      });
-    });
-
-    // Criar questões de divisão
-    divisaoQuestions.forEach((q) => {
-      questions.push({
-        id: id++,
-        operation: `${q.num1} ÷ ${q.num2} = ?`,
-        operationType: 'divisao',
-        num1: q.num1,
-        num2: q.num2,
-        result: q.result,
-        options: generateOptions(q.result),
-        librasSigns: {
-          num1: librasNumbers[q.num1] || q.num1.toString(),
-          num2: librasNumbers[q.num2] || q.num2.toString()
-        },
-        librasNumbers
-      });
-    });
-
-    // Embaralhar questões
-    return questions.sort(() => Math.random() - 0.5);
-  };
-
-  const generateOptions = (correctAnswer: number): number[] => {
-    const options = [correctAnswer];
-    while (options.length < 4) {
-      const randomOption = correctAnswer + Math.floor(Math.random() * 10) - 5;
-      if (randomOption > 0 && !options.includes(randomOption)) {
-        options.push(randomOption);
-      }
+    // Adiciona opções com LIBRAS
+    for (let i = 0; i < neededLibrasOptions; i++) {
+        if (librasPool.length > 0) incorrectOptions.add(librasPool.pop()!);
     }
-    return options.sort(() => Math.random() - 0.5);
+    
+    // Completa com opções sem LIBRAS
+    while (incorrectOptions.size < 3) {
+        if (nonLibrasPool.length > 0) incorrectOptions.add(nonLibrasPool.pop()!);
+        else { // Fallback caso o pool se esgote
+            incorrectOptions.add(getRandomInt(51, 100));
+        }
+    }
+    
+    const finalOptions = [correctAnswer, ...Array.from(incorrectOptions)];
+    return shuffleArray(finalOptions);
   };
 
-  const [questions, setQuestions] = useState<Question[]>(generateQuestions());
+  const createQuestion = (id: number, opType: Question['operationType'], totalLibras: number): Question => {
+      while (true) {
+        let num1 = 0, num2 = 0, result = 0, operationSymbol = '';
+
+        // Gera números baseados na operação
+        switch (opType) {
+            case 'soma':
+                num1 = getRandomInt(1, 25);
+                num2 = getRandomInt(1, 25);
+                result = num1 + num2;
+                operationSymbol = '+';
+                break;
+            case 'subtracao':
+                num2 = getRandomInt(1, 25);
+                num1 = getRandomInt(num2 + 1, 50);
+                result = num1 - num2;
+                operationSymbol = '-';
+                break;
+            case 'multiplicacao':
+                num1 = getRandomInt(1, 10);
+                num2 = getRandomInt(1, 10);
+                result = num1 * num2;
+                operationSymbol = '×';
+                break;
+            case 'divisao':
+                num2 = getRandomInt(2, 10);
+                result = getRandomInt(2, 10);
+                num1 = num2 * result;
+                operationSymbol = '÷';
+                break;
+        }
+
+        const uniqueNumbersInProblem = new Set([num1, num2, result]);
+        const librasInProblem = Array.from(uniqueNumbersInProblem).filter(isLibras);
+        const neededLibrasInOptions = totalLibras - librasInProblem.length;
+
+        if (neededLibrasInOptions >= 0 && neededLibrasInOptions <= 3) {
+            const options = generateOptions(result, neededLibrasInOptions);
+            return {
+                id,
+                operation: `${num1} ${operationSymbol} ${num2} = ?`,
+                operationType: opType,
+                num1, num2, result, options,
+                librasSigns: {
+                    num1: librasNumbers[num1] || num1.toString(),
+                    num2: librasNumbers[num2] || num2.toString(),
+                },
+                librasNumbers
+            };
+        }
+      }
+  };
+
+  const generateQuestions = (): Question[] => {
+    const newQuestions: Question[] = [];
+    const operations: Question['operationType'][] = ['soma', 'subtracao', 'multiplicacao', 'divisao'];
+    
+    // Nível Fácil: 4 questões com 3 sinais de LIBRAS
+    for (let i = 0; i < 4; i++) {
+        newQuestions.push(createQuestion(i + 1, operations[i], 3));
+    }
+    // Nível Médio: 4 questões com 4 sinais de LIBRAS
+    for (let i = 0; i < 4; i++) {
+        newQuestions.push(createQuestion(i + 5, operations[i], 4));
+    }
+    // Nível Difícil: 4 questões com 5 sinais de LIBRAS
+    for (let i = 0; i < 4; i++) {
+        newQuestions.push(createQuestion(i + 9, operations[i], 5));
+    }
+    
+    return shuffleArray(newQuestions);
+  };
+
+  useEffect(() => {
+    setQuestions(generateQuestions());
+  }, []);
+
 
   const handleLogin = (email: string, nome: string, tipoUsuario: 'aluno' | 'professor') => {
     setCurrentUser(email);
     setUserName(nome);
     setUserType(tipoUsuario);
     setIsLoggedIn(true);
-    
-    // Verificar se é professor e mostrar tela de professor se for
     if (tipoUsuario === 'professor') {
       setShowTeacherScreen(true);
     }
@@ -184,12 +167,12 @@ const Index = () => {
     setUserAnswers([]);
     setShowResults(false);
     setShowTeacherScreen(false);
+    setQuestions(generateQuestions());
   };
 
   const handleAnswer = (selectedAnswer: number) => {
     const newAnswers = [...userAnswers, selectedAnswer];
     setUserAnswers(newAnswers);
-
     if (currentQuestionIndex < questions.length - 1) {
       setCurrentQuestionIndex(currentQuestionIndex + 1);
     } else {
@@ -212,12 +195,12 @@ const Index = () => {
   };
 
   const resetGame = () => {
+    setQuestions(generateQuestions());
     setCurrentQuestionIndex(0);
     setUserAnswers([]);
     setShowResults(false);
   };
 
-  // Calcular acertos até agora
   const getCurrentCorrectAnswers = () => {
     let correct = 0;
     for (let i = 0; i < currentQuestionIndex; i++) {
@@ -257,6 +240,14 @@ const Index = () => {
         onLogout={handleLogout}
       />
     );
+  }
+
+  if (questions.length === 0) {
+      return (
+        <div className="min-h-screen flex items-center justify-center">
+            <p>Gerando novo quiz com níveis de dificuldade...</p>
+        </div>
+      );
   }
 
   if (showResults) {
