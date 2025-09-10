@@ -37,7 +37,7 @@ const QuestionScreen = ({
   const [isSubmitting, setIsSubmitting] = useState(false);
 
   const handleOptionClick = (option: number) => {
-    if (isSubmitting) return; 
+    if (isSubmitting) return;
     setSelectedOption(option);
   };
 
@@ -84,11 +84,9 @@ const QuestionScreen = ({
     const isCorrect = selectedOption === question.result;
 
     updateUserStats(isCorrect);
-
-    // **AQUI ESTÁ A ALTERAÇÃO FINAL**
-    // Adicionadas classes para garantir as cores verde e vermelha.
+    
     if (isCorrect) {
-      toast.success("Resposta Correta!", { 
+      toast.success("Resposta Correta!", {
         icon: <CheckCircle className="h-5 w-5" />,
         duration: 1500,
         position: 'top-center',
@@ -118,20 +116,18 @@ const QuestionScreen = ({
     }, 1500);
   };
 
-  const showLibrasLegend = questionNumber <= 7;
-  const showNumbersWithLegend = questionNumber <= 4;
-  const legendNumbers = Array.from({ length: 10 }, (_, i) => i);
-
-  const shouldShowLibrasForOption = (option: number, index: number): boolean => {
-    if (questionNumber <= 4) {
-      return index < 3;
-    } else if (questionNumber <= 7) {
-      return true;
-    } else {
-      return true;
-    }
+  // Lógica de Estágios
+  const estagio = {
+    facil: questionNumber >= 1 && questionNumber <= 4,
+    medio: questionNumber >= 5 && questionNumber <= 8,
+    dificil: questionNumber >= 9 && questionNumber <= 12,
   };
 
+  const showLibrasLegend = estagio.facil || estagio.medio;
+  const showNumbersInLegend = estagio.facil;
+  const showNumbersInOptions = estagio.facil || estagio.medio;
+  
+  const legendNumbers = Array.from({ length: 10 }, (_, i) => i);
   const progress = (questionNumber / totalQuestions) * 100;
 
   return (
@@ -190,7 +186,7 @@ const QuestionScreen = ({
               </div>
 
               <div className="grid grid-cols-2 sm:grid-cols-4 gap-4">
-                {question.options.map((option, index) => (
+                {question.options.map((option) => (
                   <Button
                     key={option}
                     onClick={() => handleOptionClick(option)}
@@ -201,10 +197,10 @@ const QuestionScreen = ({
                         : "bg-white hover:bg-gray-50 text-gray-800"
                     }`}
                   >
-                    {shouldShowLibrasForOption(option, index) && question.librasNumbers[option] ? (
+                    {question.librasNumbers[option] ? (
                       <div className="flex flex-col items-center">
                         <span className="text-2xl mb-1">{question.librasNumbers[option]}</span>
-                        {questionNumber < 5 && (
+                        {showNumbersInOptions && (
                           <span className="text-sm">{option}</span>
                         )}
                       </div>
@@ -245,7 +241,7 @@ const QuestionScreen = ({
                 {legendNumbers.map((num) => (
                   <div key={num} className="flex flex-col items-center">
                     <div className="text-2xl mb-1">{question.librasNumbers[num] || ''}</div>
-                    {showNumbersWithLegend && <div className="text-sm text-gray-700">{num}</div>}
+                    {showNumbersInLegend && <div className="text-sm text-gray-700">{num}</div>}
                   </div>
                 ))}
               </div>
